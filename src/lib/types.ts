@@ -10,10 +10,10 @@ export type Student = z.infer<typeof StudentSchema>;
 
 
 export const SeatingLayoutSchema = z.object({
-  blocks: z.number().describe('Total number of blocks available.'),
-  floorsPerBlock: z.number().describe('Number of floors in each block.'),
-  roomsPerFloor: z.number().describe('Number of rooms on each floor.'),
-  benchesPerRoom: z.number().describe('Number of benches in each room.'),
+  blocks: z.any().describe('Total number of blocks available.'),
+  floorsPerBlock: z.any().describe('Number of floors in each block.'),
+  roomsPerFloor: z.any().describe('Number of rooms on each floor.'),
+  benchesPerRoom: z.any().describe('Number of benches in each room.'),
 });
 export type SeatingLayout = z.infer<typeof SeatingLayoutSchema>;
 

@@ -59,7 +59,6 @@ const seatingArrangementFlow = ai.defineFlow(
         return { error: "Could not extract seating layout data. Please ensure the layout file is correctly formatted with columns: 'blocks', 'floorsPerBlock', 'roomsPerFloor', 'benchesPerRoom' and is not empty." };
     }
     
-    // Convert string values to numbers before calculation
     const blocks = parseInt(String(seatingLayoutOutput.blocks), 10);
     const floorsPerBlock = parseInt(String(seatingLayoutOutput.floorsPerBlock), 10);
     const roomsPerFloor = parseInt(String(seatingLayoutOutput.roomsPerFloor), 10);
