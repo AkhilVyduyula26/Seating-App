@@ -1,4 +1,4 @@
 import { config } from 'dotenv';
 config();
 
-import '@/ai/flows/generate-seating-arrangement.ts';
+import '@/ai/flows/validate-faculty-flow.ts';
