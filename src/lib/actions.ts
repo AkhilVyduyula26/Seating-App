@@ -10,8 +10,7 @@ import {
 
 export async function generateSeatingPlanAction(
   studentDataPdfDataUri: string,
-  seatingLayoutPdfDataUri: string,
-  apiKey: string
+  seatingLayoutPdfDataUri: string
 ): Promise<{
   plan?: {seatingAssignments: GenerateSeatingArrangementOutput["seatingAssignments"]};
   students?: Student[];
@@ -24,14 +23,11 @@ export async function generateSeatingPlanAction(
     if (!seatingLayoutPdfDataUri || !seatingLayoutPdfDataUri.startsWith('data:application/pdf;base64,')) {
       return { error: 'Invalid Seating Layout PDF file.' };
     }
-    if (!apiKey) {
-      return { error: 'Gemini API Key is required.' };
-    }
     
     const input: GenerateSeatingArrangementInput = {
       studentDataPdfDataUri,
       seatingLayoutPdfDataUri,
-      apiKey,
+      apiKey: "AIzaSyCWY89uq8p6E8F-LGPBtAzg0EKT9Xpn5M4",
     };
 
     const result = await generateSeatingArrangement(input);

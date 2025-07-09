@@ -37,7 +37,6 @@ const fileToDataUri = (file: File) => new Promise<string>((resolve, reject) => {
 
 
 const AdminFormSchema = z.object({
-  apiKey: z.string().min(1, "Gemini API Key is required."),
   studentDataPdf: z
     .any()
     .refine((files) => files?.length === 1, "Student data PDF is required.")
@@ -60,9 +59,6 @@ export default function AdminDashboard({ onSeatingPlanGenerated }: AdminDashboar
 
   const form = useForm<AdminFormType>({
     resolver: zodResolver(AdminFormSchema),
-    defaultValues: {
-      apiKey: "",
-    }
   });
 
   const onSubmit: SubmitHandler<AdminFormType> = (data) => {
@@ -78,8 +74,7 @@ export default function AdminDashboard({ onSeatingPlanGenerated }: AdminDashboar
 
       const result = await generateSeatingPlanAction(
         studentDataUri,
-        layoutDataUri,
-        data.apiKey
+        layoutDataUri
       );
 
       if (result.error) {
@@ -105,29 +100,12 @@ export default function AdminDashboard({ onSeatingPlanGenerated }: AdminDashboar
       <CardHeader>
         <CardTitle>Admin Dashboard</CardTitle>
         <CardDescription>
-          Upload PDFs for student data and seating layout. Provide your Gemini API key to generate the arrangement.
+          Upload PDFs for student data and seating layout to generate the arrangement.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="apiKey"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Gemini API Key</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="Enter your Gemini API Key"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <FormField
               control={form.control}
               name="studentDataPdf"
