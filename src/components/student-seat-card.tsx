@@ -1,15 +1,15 @@
 "use client";
 
-import type { SeatingPlan } from "@/app/page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { User, Ticket, BookOpen, Building, Layers, School, Armchair, Calendar, Clock, Phone, AlertCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { format } from "date-fns";
+import type { StudentSeatDetails } from "@/lib/types";
 
 interface StudentSeatCardProps {
-  seatDetails: SeatingPlan;
+  seatDetails: StudentSeatDetails;
 }
 
 const InfoRow = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: string | number }) => (
@@ -24,22 +24,17 @@ const InfoRow = ({ icon: Icon, label, value }: { icon: React.ElementType, label:
 
 export default function StudentSeatCard({ seatDetails }: StudentSeatCardProps) {
   const { toast } = useToast();
-  const [examDate, setExamDate] = useState('');
-  const examTime = "10:00 AM";
-
-  useEffect(() => {
-    const date = new Date();
-    date.setDate(date.getDate() + 7); // Exam is 7 days from now
-    setExamDate(date.toLocaleDateString('en-GB'));
-  }, []);
 
   const handleWhatsAppAlert = () => {
+    const examDateTime = new Date(seatDetails.examDateTime);
     // Placeholder for actual WhatsApp API integration
     toast({
       title: "WhatsApp Alert",
-      description: `A simulated alert has been sent to ${seatDetails.contactNumber}.`,
+      description: `A simulated alert for the exam on ${format(examDateTime, "PPP p")} has been sent to ${seatDetails.contactNumber}.`,
     });
   };
+  
+  const examDateTime = new Date(seatDetails.examDateTime);
 
   return (
     <Card className="bg-card border-primary/20 shadow-xl">
@@ -71,9 +66,9 @@ export default function StudentSeatCard({ seatDetails }: StudentSeatCardProps) {
         </div>
         <div className="p-4 rounded-lg border border-dashed border-accent space-y-1">
             <h3 className="text-lg font-semibold text-center mb-2 text-accent flex items-center justify-center gap-2"><AlertCircle className="text-accent"/> Exam Details</h3>
-            <InfoRow icon={Calendar} label="Date" value={examDate} />
+            <InfoRow icon={Calendar} label="Date" value={format(examDateTime, "PPP")} />
             <Separator />
-            <InfoRow icon={Clock} label="Time" value={examTime} />
+            <InfoRow icon={Clock} label="Time" value={format(examDateTime, "p")} />
         </div>
       </CardContent>
       <CardFooter>

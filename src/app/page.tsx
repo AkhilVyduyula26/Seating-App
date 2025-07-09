@@ -1,20 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import type { GenerateSeatingArrangementOutput, Student } from "@/ai/flows/generate-seating-arrangement";
 import AdminDashboard from "@/components/admin-dashboard";
 import StudentView from "@/components/student-view";
 import { Bot, LogIn, LogOut } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-// Combined type for easy access across components
-export type SeatingPlan = GenerateSeatingArrangementOutput["seatingAssignments"][0] & {
-  name: string;
-  branch: string;
-  contactNumber: string;
-};
+import type { SeatingPlan } from "@/lib/types";
 
 // Mock authentication state
 type User = {
@@ -22,47 +15,26 @@ type User = {
 };
 
 export default function Home() {
-  const [seatingPlan, setSeatingPlan] = useState<SeatingPlan[]>([]);
   const [user, setUser] = useState<User>({ role: null });
   const [selectedRole, setSelectedRole] = useState<'admin' | 'student' | ''>('');
 
-  const handleSeatingPlanGenerated = (
-    plan: {seatingAssignments: GenerateSeatingArrangementOutput["seatingAssignments"]},
-    students: Student[]
-  ) => {
-    // Combine the generated plan with parsed student data for richer display
-    const combinedPlan = plan.seatingAssignments.map((assignment) => {
-      const student = students.find(
-        (s) => s.hallTicketNumber === assignment.hallTicketNumber
-      );
-      return {
-        ...assignment,
-        name: student?.name || "N/A",
-        branch: student?.branch || "N/A",
-        contactNumber: student?.contactNumber || "N/A",
-      };
-    });
-    setSeatingPlan(combinedPlan);
-  };
-  
   const handleLogin = () => {
-      if (selectedRole) {
-          setUser({ role: selectedRole });
-      }
+    if (selectedRole) {
+      setUser({ role: selectedRole });
+    }
   };
 
   const handleLogout = () => {
     setUser({ role: null });
-    setSeatingPlan([]);
     setSelectedRole('');
   }
 
   const renderContent = () => {
     if (user.role === 'admin') {
-      return <AdminDashboard onSeatingPlanGenerated={handleSeatingPlanGenerated} />;
+      return <AdminDashboard />;
     }
     if (user.role === 'student') {
-      return <StudentView seatingPlan={seatingPlan} />;
+      return <StudentView />;
     }
     // Login View
     return (

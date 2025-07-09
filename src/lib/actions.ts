@@ -1,19 +1,19 @@
 "use server";
 
-import { z } from "zod";
 import {
   generateSeatingArrangement,
   type GenerateSeatingArrangementInput,
-  type GenerateSeatingArrangementOutput,
-  type Student,
 } from "@/ai/flows/generate-seating-arrangement";
+import * as db from '@/lib/database';
+import type { SeatingPlan } from "@/lib/types";
+
 
 export async function generateSeatingPlanAction(
   studentDataPdfDataUri: string,
-  seatingLayoutPdfDataUri: string
+  seatingLayoutPdfDataUri: string,
+  examDateTime: Date,
 ): Promise<{
-  plan?: {seatingAssignments: GenerateSeatingArrangementOutput["seatingAssignments"]};
-  students?: Student[];
+  plan?: SeatingPlan[];
   error?: string;
 }> {
   try {
@@ -43,7 +43,24 @@ export async function generateSeatingPlanAction(
       return { error: `Seating capacity is insufficient. Found ${result.students.length} students but only ${result.seatingAssignments.length} seats could be assigned.` };
     }
 
-    return { plan: { seatingAssignments: result.seatingAssignments }, students: result.students };
+    const combinedPlan: SeatingPlan[] = result.seatingAssignments.map((assignment) => {
+        const student = result.students.find(s => s.hallTicketNumber === assignment.hallTicketNumber);
+        return {
+            ...assignment,
+            name: student?.name || 'N/A',
+            branch: student?.branch || 'N/A',
+            contactNumber: student?.contactNumber || 'N/A',
+        }
+    });
+
+    await db.saveSeatingPlan(combinedPlan, examDateTime);
+    
+    // ** Simulation of Scheduled Tasks **
+    // In a production environment, you would now trigger a scheduled function (e.g., using Google Cloud Scheduler or Vercel Cron).
+    // 1. Schedule WhatsApp alerts: A function would be scheduled to run 1 hour before `examDateTime`. It would read the plan and send messages.
+    // 2. Schedule data deletion: Another function would be scheduled to run after the exam ends to call `deleteSeatingPlan()`.
+    
+    return { plan: combinedPlan };
 
   } catch (e: any) {
     console.error("Error generating seating plan:", e);
@@ -52,4 +69,19 @@ export async function generateSeatingPlanAction(
     }
     return { error: e.message || "An unexpected error occurred while processing the PDFs." };
   }
+}
+
+
+export async function getSeatingPlanAction() {
+  return await db.getSeatingPlan();
+}
+
+export async function deleteSeatingPlanAction() {
+  await db.deleteSeatingPlan();
+  return { success: true };
+}
+
+export async function getStudentSeatAction(hallTicketNumber: string) {
+  if (!hallTicketNumber) return null;
+  return await db.getStudentSeatByHallTicket(hallTicketNumber);
 }

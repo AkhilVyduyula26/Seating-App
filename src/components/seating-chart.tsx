@@ -1,10 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import type {
-  GenerateSeatingArrangementOutput,
-  Student
-} from "@/ai/flows/generate-seating-arrangement";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -22,35 +18,20 @@ import {
     SelectValue,
   } from "@/components/ui/select"
 import { ScrollArea } from "@/components/ui/scroll-area";
+import type { SeatingPlan } from "@/lib/types";
 
 interface SeatingChartProps {
-  assignments: GenerateSeatingArrangementOutput["seatingAssignments"];
-  students: Student[];
+  plan: SeatingPlan[];
 }
 
-export default function SeatingChart({ assignments, students }: SeatingChartProps) {
+export default function SeatingChart({ plan }: SeatingChartProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [branchFilter, setBranchFilter] = useState("all");
 
-  const combinedData = useMemo(() => {
-    return assignments.map(assignment => {
-      const student = students.find(s => s.hallTicketNumber === assignment.hallTicketNumber);
-      return {
-        name: student?.name || "N/A",
-        hallTicketNumber: assignment.hallTicketNumber,
-        branch: student?.branch || "N/A",
-        block: assignment.block,
-        floor: assignment.floor,
-        classroom: assignment.classroom,
-        benchNumber: assignment.benchNumber,
-      };
-    });
-  }, [assignments, students]);
-  
-  const branches = useMemo(() => ["all", ...new Set(combinedData.map(d => d.branch))], [combinedData]);
+  const branches = useMemo(() => ["all", ...new Set(plan.map(d => d.branch))], [plan]);
 
   const filteredData = useMemo(() => {
-    return combinedData.filter(item => {
+    return plan.filter(item => {
       const lowerCaseSearch = searchTerm.toLowerCase();
       const matchesSearch =
         item.name.toLowerCase().includes(lowerCaseSearch) ||
@@ -58,7 +39,7 @@ export default function SeatingChart({ assignments, students }: SeatingChartProp
       const matchesBranch = branchFilter === "all" || item.branch === branchFilter;
       return matchesSearch && matchesBranch;
     });
-  }, [combinedData, searchTerm, branchFilter]);
+  }, [plan, searchTerm, branchFilter]);
 
   return (
     <div className="space-y-4">
