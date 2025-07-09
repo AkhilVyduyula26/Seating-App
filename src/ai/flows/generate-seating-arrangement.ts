@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview Parses student data from a PDF and automatically assigns seats, ensuring no students from the same branch sit next to each other.
+ * @fileOverview Parses student data and seating layout from PDF files and automatically assigns seats, ensuring no students from the same branch sit next to each other.
  *
  * - generateSeatingArrangement - A function that handles PDF parsing and seating arrangement generation.
  * - GenerateSeatingArrangementInput - The input type for the generateSeatingArrangement function.
@@ -20,10 +20,12 @@ export type Student = z.infer<typeof StudentSchema>;
 
 
 const GenerateSeatingArrangementInputSchema = z.object({
-  pdfDataUri: z.string().describe(
+  studentDataPdfDataUri: z.string().describe(
       "A PDF file of student data, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
-  seatingCapacity: z.number().describe('The total seating capacity of the exam hall.'),
+  seatingLayoutPdfDataUri: z.string().describe(
+      "A PDF file describing the seating layout (blocks, floors, rooms, benches), as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+    ),
 });
 export type GenerateSeatingArrangementInput = z.infer<typeof GenerateSeatingArrangementInputSchema>;
 
@@ -49,21 +51,24 @@ const generateSeatingArrangementPrompt = ai.definePrompt({
   name: 'generateSeatingArrangementPrompt',
   input: {schema: GenerateSeatingArrangementInputSchema},
   output: {schema: GenerateSeatingArrangementOutputSchema},
-  prompt: `You are an expert in parsing student data from PDF files and assigning seats for exams.
+  prompt: `You are an expert in parsing student and seating layout data from PDF files and assigning seats for exams.
 
-First, parse the student data from the provided PDF. The PDF contains columns for Name, Hall Ticket Number, Branch, and Contact Number. Extract this information into a structured list of students.
+You will be given two PDF files:
+1. A PDF containing student data with columns for Name, Hall Ticket Number, Branch, and Contact Number.
+2. A PDF containing the seating layout, with details on the number of blocks, floors per block, rooms per floor, and benches per room.
 
-PDF with student data: {{media url=pdfDataUri}}
+Your tasks are:
+1. Parse the student data from the student data PDF.
+   Student Data PDF: {{media url=studentDataPdfDataUri}}
+2. Parse the seating layout from the seating layout PDF to understand the exact structure and total capacity.
+   Seating Layout PDF: {{media url=seatingLayoutPdfDataUri}}
+3. Use the parsed layout to assign each student a unique seat (Block, Floor, Classroom, and Bench Number).
+4. Crucially, ensure that no two students from the same branch are seated next to each other. You must enforce this rule strictly.
+5. Check if the total number of students exceeds the total seating capacity derived from the layout PDF. For this task, you can assume capacity is sufficient and must assign a seat to every student.
 
-After parsing, use the extracted student list and the given seating capacity to generate a seating arrangement where no two students from the same branch are seated next to each other.
+Return BOTH the parsed student list AND the final seating arrangement in the specified JSON format.
 
-Seating Capacity: {{{seatingCapacity}}}
-
-Return BOTH the parsed student list AND the final seating arrangement in the following JSON format:
-
-{{JSON.stringify(GenerateSeatingArrangementOutputSchema.shape)}}
-
-Ensure that all students are assigned a seat. Generate unique Block, Floor, Classroom, and Bench Number details for each student. Assume there are multiple blocks, floors and classrooms.
+The block, floor, and classroom assignments must be consistent with the provided seating layout PDF.
 `,
 });
 

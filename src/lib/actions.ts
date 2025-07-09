@@ -9,42 +9,44 @@ import {
 } from "@/ai/flows/generate-seating-arrangement";
 
 export async function generateSeatingPlanAction(
-  pdfDataUri: string,
-  seatingCapacityStr: string
+  studentDataPdfDataUri: string,
+  seatingLayoutPdfDataUri: string
 ): Promise<{
   plan?: {seatingAssignments: GenerateSeatingArrangementOutput["seatingAssignments"]};
   students?: Student[];
   error?: string;
 }> {
   try {
-    const seatingCapacity = parseInt(seatingCapacityStr, 10);
-    if (isNaN(seatingCapacity) || seatingCapacity <= 0) {
-      return { error: "Invalid seating capacity. Must be a positive number." };
+    if (!studentDataPdfDataUri || !studentDataPdfDataUri.startsWith('data:application/pdf;base64,')) {
+      return { error: 'Invalid Student Data PDF file.' };
     }
-
-    if (!pdfDataUri || !pdfDataUri.startsWith('data:application/pdf;base64,')) {
-      return { error: 'Invalid PDF file data.' };
+    if (!seatingLayoutPdfDataUri || !seatingLayoutPdfDataUri.startsWith('data:application/pdf;base64,')) {
+      return { error: 'Invalid Seating Layout PDF file.' };
     }
     
     const input: GenerateSeatingArrangementInput = {
-      pdfDataUri,
-      seatingCapacity,
+      studentDataPdfDataUri,
+      seatingLayoutPdfDataUri,
     };
 
     const result = await generateSeatingArrangement(input);
 
-    if (result.students.length === 0) {
+    if (!result.students || result.students.length === 0) {
         return { error: "No student data could be extracted from the PDF." };
     }
 
-    if (result.students.length > seatingCapacity) {
-        return { error: "Seating capacity is less than the number of students found in the PDF." };
+    if (!result.seatingAssignments || result.seatingAssignments.length === 0) {
+      return { error: "Could not generate seating assignments. The AI might have had an issue with the layout PDF." };
+    }
+
+    if (result.students.length > result.seatingAssignments.length) {
+      return { error: `Seating capacity is insufficient. Found ${result.students.length} students but only ${result.seatingAssignments.length} seats could be assigned.` };
     }
 
     return { plan: { seatingAssignments: result.seatingAssignments }, students: result.students };
 
   } catch (e: any) {
     console.error("Error generating seating plan:", e);
-    return { error: e.message || "An unexpected error occurred while processing the PDF." };
+    return { error: e.message || "An unexpected error occurred while processing the PDFs." };
   }
 }

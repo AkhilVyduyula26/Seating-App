@@ -39,12 +39,14 @@ const fileToDataUri = (file: File) => new Promise<string>((resolve, reject) => {
 const AdminFormSchema = z.object({
   studentDataPdf: z
     .any()
-    .refine((files) => files?.length === 1, "PDF file is required.")
+    .refine((files) => files?.length === 1, "Student data PDF is required.")
     .refine((files) => files?.[0]?.type === "application/pdf", "Must be a PDF file.")
     .refine((files) => files?.[0]?.size <= 5 * 1024 * 1024, `Max file size is 5MB.`),
-  seatingCapacity: z.string().min(1, "Seating capacity is required.").refine(val => !isNaN(parseInt(val, 10)) && parseInt(val, 10) > 0, {
-    message: "Capacity must be a positive number.",
-  }),
+  seatingLayoutPdf: z
+    .any()
+    .refine((files) => files?.length === 1, "Seating layout PDF is required.")
+    .refine((files) => files?.[0]?.type === "application/pdf", "Must be a PDF file.")
+    .refine((files) => files?.[0]?.size <= 5 * 1024 * 1024, `Max file size is 5MB.`),
 });
 
 type AdminFormType = z.infer<typeof AdminFormSchema>;
@@ -57,9 +59,6 @@ export default function AdminDashboard({ onSeatingPlanGenerated }: AdminDashboar
 
   const form = useForm<AdminFormType>({
     resolver: zodResolver(AdminFormSchema),
-    defaultValues: {
-      seatingCapacity: "",
-    },
   });
 
   const onSubmit: SubmitHandler<AdminFormType> = (data) => {
@@ -67,12 +66,15 @@ export default function AdminDashboard({ onSeatingPlanGenerated }: AdminDashboar
       setGeneratedPlan(null);
       setStudents([]);
       
-      const file = data.studentDataPdf[0] as File;
-      const pdfDataUri = await fileToDataUri(file);
+      const studentFile = data.studentDataPdf[0] as File;
+      const studentDataUri = await fileToDataUri(studentFile);
+
+      const layoutFile = data.seatingLayoutPdf[0] as File;
+      const layoutDataUri = await fileToDataUri(layoutFile);
 
       const result = await generateSeatingPlanAction(
-        pdfDataUri,
-        data.seatingCapacity
+        studentDataUri,
+        layoutDataUri
       );
 
       if (result.error) {
@@ -98,7 +100,7 @@ export default function AdminDashboard({ onSeatingPlanGenerated }: AdminDashboar
       <CardHeader>
         <CardTitle>Admin Dashboard</CardTitle>
         <CardDescription>
-          Upload a PDF with student data and set the total seating capacity to generate the arrangement.
+          Upload a PDF with student data and a PDF with the seating layout to generate the arrangement.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -123,12 +125,16 @@ export default function AdminDashboard({ onSeatingPlanGenerated }: AdminDashboar
             />
             <FormField
               control={form.control}
-              name="seatingCapacity"
+              name="seatingLayoutPdf"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Total Seating Capacity</FormLabel>
+                  <FormLabel>Seating Layout (PDF)</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="e.g., 100" {...field} />
+                    <Input
+                      type="file"
+                      accept="application/pdf"
+                      onChange={(e) => field.onChange(e.target.files)}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -148,7 +154,7 @@ export default function AdminDashboard({ onSeatingPlanGenerated }: AdminDashboar
         {isPending && (
             <div className="mt-8 flex flex-col items-center justify-center gap-4 text-muted-foreground">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="font-medium">AI is thinking... Reading PDF and allocating seats.</p>
+                <p className="font-medium">AI is thinking... Reading PDFs and allocating seats.</p>
                 <p className="text-sm">This may take a moment.</p>
             </div>
         )}
