@@ -27,7 +27,6 @@ export async function generateSeatingPlanAction(
     const input: GenerateSeatingArrangementInput = {
       studentDataPdfDataUri,
       seatingLayoutPdfDataUri,
-      apiKey: "AIzaSyCWY89uq8p6E8F-LGPBtAzg0EKT9Xpn5M4",
     };
 
     const result = await generateSeatingArrangement(input);

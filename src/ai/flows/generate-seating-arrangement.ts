@@ -19,18 +19,13 @@ const StudentSchema = z.object({
 });
 export type Student = z.infer<typeof StudentSchema>;
 
-
-const PromptInputSchema = z.object({
+const GenerateSeatingArrangementInputSchema = z.object({
   studentDataPdfDataUri: z.string().describe(
       "A PDF file of student data, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
   seatingLayoutPdfDataUri: z.string().describe(
       "A PDF file describing the seating layout (blocks, floors, rooms, benches), as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
-});
-
-const GenerateSeatingArrangementInputSchema = PromptInputSchema.extend({
-  apiKey: z.string().describe('The Gemini API key to use for the request.'),
 });
 export type GenerateSeatingArrangementInput = z.infer<typeof GenerateSeatingArrangementInputSchema>;
 
@@ -54,7 +49,7 @@ export async function generateSeatingArrangement(input: GenerateSeatingArrangeme
 
 const generateSeatingArrangementPrompt = ai.definePrompt({
   name: 'generateSeatingArrangementPrompt',
-  input: {schema: PromptInputSchema},
+  input: {schema: GenerateSeatingArrangementInputSchema},
   output: {schema: GenerateSeatingArrangementOutputSchema},
   prompt: `You are an expert in parsing student and seating layout data from PDF files and assigning seats for exams.
 
@@ -84,11 +79,9 @@ const generateSeatingArrangementFlow = ai.defineFlow(
     outputSchema: GenerateSeatingArrangementOutputSchema,
   },
   async input => {
-    const { apiKey, ...promptInput } = input;
-    
-    const model = googleAI({apiKey}).model('gemini-2.0-flash');
+    const model = googleAI({apiKey: "AIzaSyCWY89uq8p6E8F-LGPBtAzg0EKT9Xpn5M4"}).model('gemini-2.0-flash');
 
-    const {output} = await generateSeatingArrangementPrompt(promptInput, { model });
+    const {output} = await generateSeatingArrangementPrompt(input, { model });
     return output!;
   }
 );
