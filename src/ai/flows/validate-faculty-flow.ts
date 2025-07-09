@@ -40,10 +40,6 @@ async function getFacultyData() {
 export async function validateFaculty(input: ValidateFacultyInput): Promise<ValidateFacultyOutput> {
     const authData = await getFacultyData();
 
-    if (input.secureKey && (input.secureKey !== authData.secure_key)) {
-        return { isAuthorized: false, error: "Secure key mismatch." };
-    }
-
     const facultyMember = authData.authorized_faculty.find(
         (faculty: { faculty_id: string }) => 
           faculty.faculty_id.toLowerCase() === input.facultyId.toLowerCase()
@@ -53,13 +49,17 @@ export async function validateFaculty(input: ValidateFacultyInput): Promise<Vali
         return { isAuthorized: false, error: "Faculty ID not found." };
     }
 
-    // If secure key is provided, it must match. If not provided, we only check for faculty ID.
-    if(input.secureKey) {
+    // If a secure key is provided for validation, it must match.
+    if (input.secureKey) {
         if (input.secureKey !== authData.secure_key) {
              return { isAuthorized: false, error: "Secure key mismatch." };
         }
     }
 
-
+    // If we reach here, it means:
+    // 1. The faculty ID was found.
+    // 2. EITHER a secure key was provided and it matched, OR no secure key was provided for validation.
+    // In the context of the simple admin login from the main page, we only check for the ID.
+    // In the faculty tools view, we check for both ID and key. This logic supports both cases.
     return { isAuthorized: true };
 }
