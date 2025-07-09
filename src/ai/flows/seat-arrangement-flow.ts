@@ -16,15 +16,6 @@ export async function generateSeatingArrangement(
   return seatingArrangementFlow(input);
 }
 
-
-// Internal type for the flow, combining student list, layout, and exam config
-const SeatingPlanGenerationInfoSchema = z.object({
-  students: z.array(StudentSchema),
-  layout: SeatingLayoutSchema,
-  examConfig: z.custom<ExamConfig>() // Using z.custom as z.date() doesn't pass through flows well
-});
-
-
 const seatingArrangementFlow = ai.defineFlow(
   {
     name: 'seatingArrangementFlow',
