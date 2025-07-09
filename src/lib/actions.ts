@@ -5,21 +5,15 @@ import {
   generateSeatingArrangement,
   type GenerateSeatingArrangementInput,
   type GenerateSeatingArrangementOutput,
+  type Student,
 } from "@/ai/flows/generate-seating-arrangement";
 
-const StudentSchema = z.object({
-  name: z.string(),
-  hallTicketNumber: z.string(),
-  branch: z.string(),
-  contactNumber: z.string(),
-});
-
 export async function generateSeatingPlanAction(
-  studentDataCsv: string,
+  pdfDataUri: string,
   seatingCapacityStr: string
 ): Promise<{
-  plan?: GenerateSeatingArrangementOutput;
-  students?: GenerateSeatingArrangementInput["students"];
+  plan?: {seatingAssignments: GenerateSeatingArrangementOutput["seatingAssignments"]};
+  students?: Student[];
   error?: string;
 }> {
   try {
@@ -28,45 +22,29 @@ export async function generateSeatingPlanAction(
       return { error: "Invalid seating capacity. Must be a positive number." };
     }
 
-    const rows = studentDataCsv.trim().split("\n");
-    const students: GenerateSeatingArrangementInput["students"] = [];
-
-    for (const row of rows) {
-      if (row.trim() === "") continue;
-      const [name, hallTicketNumber, branch, contactNumber] = row.split(",").map(s => s.trim());
-      
-      const studentParseResult = StudentSchema.safeParse({
-        name,
-        hallTicketNumber,
-        branch,
-        contactNumber,
-      });
-
-      if (!studentParseResult.success) {
-        return { error: `Invalid student data format in row: "${row}". Ensure format is: Name, HallTicketNumber, Branch, ContactNumber` };
-      }
-      students.push(studentParseResult.data);
-    }
-
-    if (students.length === 0) {
-        return { error: "No student data provided." };
-    }
-
-    if (students.length > seatingCapacity) {
-        return { error: "Seating capacity is less than the number of students." };
+    if (!pdfDataUri || !pdfDataUri.startsWith('data:application/pdf;base64,')) {
+      return { error: 'Invalid PDF file data.' };
     }
     
     const input: GenerateSeatingArrangementInput = {
-      students,
+      pdfDataUri,
       seatingCapacity,
     };
 
-    const plan = await generateSeatingArrangement(input);
+    const result = await generateSeatingArrangement(input);
 
-    return { plan, students };
+    if (result.students.length === 0) {
+        return { error: "No student data could be extracted from the PDF." };
+    }
+
+    if (result.students.length > seatingCapacity) {
+        return { error: "Seating capacity is less than the number of students found in the PDF." };
+    }
+
+    return { plan: { seatingAssignments: result.seatingAssignments }, students: result.students };
 
   } catch (e: any) {
     console.error("Error generating seating plan:", e);
-    return { error: e.message || "An unexpected error occurred." };
+    return { error: e.message || "An unexpected error occurred while processing the PDF." };
   }
 }

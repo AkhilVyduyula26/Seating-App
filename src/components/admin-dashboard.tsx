@@ -5,8 +5,8 @@ import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type {
-  GenerateSeatingArrangementInput,
   GenerateSeatingArrangementOutput,
+  Student
 } from "@/ai/flows/generate-seating-arrangement";
 import { generateSeatingPlanAction } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
@@ -14,19 +14,34 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import SeatingChart from "./seating-chart";
 import { Loader2, Zap } from "lucide-react";
 
 interface AdminDashboardProps {
   onSeatingPlanGenerated: (
-    plan: GenerateSeatingArrangementOutput,
-    students: GenerateSeatingArrangementInput["students"]
+    plan: {seatingAssignments: GenerateSeatingArrangementOutput["seatingAssignments"]},
+    students: Student[]
   ) => void;
 }
 
+const fileToDataUri = (file: File) => new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        resolve(event.target?.result as string);
+    };
+    reader.onerror = (error) => {
+        reject(error);
+    };
+    reader.readAsDataURL(file);
+});
+
+
 const AdminFormSchema = z.object({
-  studentData: z.string().min(1, "Student data is required."),
+  studentDataPdf: z
+    .any()
+    .refine((files) => files?.length === 1, "PDF file is required.")
+    .refine((files) => files?.[0]?.type === "application/pdf", "Must be a PDF file.")
+    .refine((files) => files?.[0]?.size <= 5 * 1024 * 1024, `Max file size is 5MB.`),
   seatingCapacity: z.string().min(1, "Seating capacity is required.").refine(val => !isNaN(parseInt(val, 10)) && parseInt(val, 10) > 0, {
     message: "Capacity must be a positive number.",
   }),
@@ -37,22 +52,26 @@ type AdminFormType = z.infer<typeof AdminFormSchema>;
 export default function AdminDashboard({ onSeatingPlanGenerated }: AdminDashboardProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
-  const [generatedPlan, setGeneratedPlan] = useState<GenerateSeatingArrangementOutput | null>(null);
-  const [students, setStudents] = useState<GenerateSeatingArrangementInput["students"]>([]);
+  const [generatedPlan, setGeneratedPlan] = useState<{seatingAssignments: GenerateSeatingArrangementOutput["seatingAssignments"]} | null>(null);
+  const [students, setStudents] = useState<Student[]>([]);
 
   const form = useForm<AdminFormType>({
     resolver: zodResolver(AdminFormSchema),
     defaultValues: {
-      studentData: "",
       seatingCapacity: "",
     },
   });
 
   const onSubmit: SubmitHandler<AdminFormType> = (data) => {
     startTransition(async () => {
-      setGeneratedPlan(null); // Clear previous results
+      setGeneratedPlan(null);
+      setStudents([]);
+      
+      const file = data.studentDataPdf[0] as File;
+      const pdfDataUri = await fileToDataUri(file);
+
       const result = await generateSeatingPlanAction(
-        data.studentData,
+        pdfDataUri,
         data.seatingCapacity
       );
 
@@ -79,8 +98,7 @@ export default function AdminDashboard({ onSeatingPlanGenerated }: AdminDashboar
       <CardHeader>
         <CardTitle>Admin Dashboard</CardTitle>
         <CardDescription>
-          Provide student data and seating capacity to generate the arrangement.
-          Please provide data in CSV format: Name,HallTicketNumber,Branch,ContactNumber, each on a new line.
+          Upload a PDF with student data and set the total seating capacity to generate the arrangement.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -88,15 +106,15 @@ export default function AdminDashboard({ onSeatingPlanGenerated }: AdminDashboar
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
-              name="studentData"
+              name="studentDataPdf"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Student Data (CSV Format)</FormLabel>
+                  <FormLabel>Student Data (PDF)</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="John Doe,20XJ1A0501,CSE,1234567890\nJane Smith,20XJ1A0402,ECE,0987654321"
-                      className="min-h-[150px] font-mono"
-                      {...field}
+                    <Input
+                      type="file"
+                      accept="application/pdf"
+                      onChange={(e) => field.onChange(e.target.files)}
                     />
                   </FormControl>
                   <FormMessage />
@@ -130,7 +148,7 @@ export default function AdminDashboard({ onSeatingPlanGenerated }: AdminDashboar
         {isPending && (
             <div className="mt-8 flex flex-col items-center justify-center gap-4 text-muted-foreground">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="font-medium">AI is thinking... Allocating seats now.</p>
+                <p className="font-medium">AI is thinking... Reading PDF and allocating seats.</p>
                 <p className="text-sm">This may take a moment.</p>
             </div>
         )}

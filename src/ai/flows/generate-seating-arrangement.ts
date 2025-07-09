@@ -1,8 +1,8 @@
 'use server';
 /**
- * @fileOverview Automatically assigns seats to students, ensuring no students from the same branch sit next to each other.
+ * @fileOverview Parses student data from a PDF and automatically assigns seats, ensuring no students from the same branch sit next to each other.
  *
- * - generateSeatingArrangement - A function that generates the seating arrangement.
+ * - generateSeatingArrangement - A function that handles PDF parsing and seating arrangement generation.
  * - GenerateSeatingArrangementInput - The input type for the generateSeatingArrangement function.
  * - GenerateSeatingArrangementOutput - The return type for the generateSeatingArrangement function.
  */
@@ -16,9 +16,13 @@ const StudentSchema = z.object({
   branch: z.string().describe('The branch of the student.'),
   contactNumber: z.string().describe('The contact number of the student.'),
 });
+export type Student = z.infer<typeof StudentSchema>;
+
 
 const GenerateSeatingArrangementInputSchema = z.object({
-  students: z.array(StudentSchema).describe('An array of student objects.'),
+  pdfDataUri: z.string().describe(
+      "A PDF file of student data, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+    ),
   seatingCapacity: z.number().describe('The total seating capacity of the exam hall.'),
 });
 export type GenerateSeatingArrangementInput = z.infer<typeof GenerateSeatingArrangementInputSchema>;
@@ -32,6 +36,7 @@ const SeatingAssignmentSchema = z.object({
 });
 
 const GenerateSeatingArrangementOutputSchema = z.object({
+  students: z.array(StudentSchema).describe('The parsed list of student objects from the PDF.'),
   seatingAssignments: z.array(SeatingAssignmentSchema).describe('An array of seating assignments for each student.'),
 });
 export type GenerateSeatingArrangementOutput = z.infer<typeof GenerateSeatingArrangementOutputSchema>;
@@ -44,19 +49,21 @@ const generateSeatingArrangementPrompt = ai.definePrompt({
   name: 'generateSeatingArrangementPrompt',
   input: {schema: GenerateSeatingArrangementInputSchema},
   output: {schema: GenerateSeatingArrangementOutputSchema},
-  prompt: `You are an expert in assigning seats to students in an exam hall.
+  prompt: `You are an expert in parsing student data from PDF files and assigning seats for exams.
 
-Given the following list of students and the seating capacity, generate a seating arrangement such that no two students from the same branch are seated next to each other.
+First, parse the student data from the provided PDF. The PDF contains columns for Name, Hall Ticket Number, Branch, and Contact Number. Extract this information into a structured list of students.
 
-Students: {{{JSON.stringify(students)}}}
+PDF with student data: {{media url=pdfDataUri}}
+
+After parsing, use the extracted student list and the given seating capacity to generate a seating arrangement where no two students from the same branch are seated next to each other.
 
 Seating Capacity: {{{seatingCapacity}}}
 
-Return the seating arrangement in the following JSON format:
+Return BOTH the parsed student list AND the final seating arrangement in the following JSON format:
 
 {{JSON.stringify(GenerateSeatingArrangementOutputSchema.shape)}}
 
-Ensure that all students are assigned a seat and that the seating arrangement is optimized to avoid students from the same branch sitting next to each other. Generate unique Block, Floor, Classroom, and Bench Number details for each student. Assume there are multiple blocks, floors and classrooms.
+Ensure that all students are assigned a seat. Generate unique Block, Floor, Classroom, and Bench Number details for each student. Assume there are multiple blocks, floors and classrooms.
 `,
 });
 

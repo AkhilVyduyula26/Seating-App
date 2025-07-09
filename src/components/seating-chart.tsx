@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from "react";
 import type {
-  GenerateSeatingArrangementInput,
   GenerateSeatingArrangementOutput,
+  Student
 } from "@/ai/flows/generate-seating-arrangement";
 import { Input } from "@/components/ui/input";
 import {
@@ -25,7 +25,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface SeatingChartProps {
   assignments: GenerateSeatingArrangementOutput["seatingAssignments"];
-  students: GenerateSeatingArrangementInput["students"];
+  students: Student[];
 }
 
 export default function SeatingChart({ assignments, students }: SeatingChartProps) {
