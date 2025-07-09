@@ -391,5 +391,17 @@
       "contactNumber": "9391228563"
     }
   ],
-  "examDateTime": "2025-07-09T06:30:00.000Z"
+  "examConfig": {
+    "startDate": "2025-07-09T00:00:00.000Z",
+    "endDate": "2025-07-11T00:00:00.000Z",
+    "startTime": {
+      "hour": "10",
+      "minute": "00"
+    },
+    "endTime": {
+      "hour": "13",
+      "minute": "00"
+    },
+    "useSamePlan": true
+  }
 }

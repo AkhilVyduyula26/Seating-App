@@ -127,7 +127,7 @@ export default function AdminDashboard() {
     )
   }
 
-  if (seatingData) {
+  if (seatingData && seatingData.plan?.length && seatingData.examConfig) {
     const { startDate, endDate, startTime, endTime } = seatingData.examConfig;
     return (
         <Card className="w-full shadow-lg">
