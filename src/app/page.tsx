@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Shield, Bot, UserCheck } from "lucide-react";
+import { User, Shield, Bot, UserCheck, Home as HomeIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type Role = "admin" | "student" | null;
@@ -43,7 +43,7 @@ export default function Home() {
                   <TabsTrigger value="seating"><Shield className="mr-2" /> Seating Admin</TabsTrigger>
                   <TabsTrigger value="faculty"><UserCheck className="mr-2" /> Faculty Tools</TabsTrigger>
               </TabsList>
-              <Button variant="outline" onClick={() => setRole(null)}><Home className="mr-2" /> Back to Home</Button>
+              <Button variant="outline" onClick={() => setRole(null)}><HomeIcon className="mr-2" /> Back to Home</Button>
             </div>
             <TabsContent value="seating">
                 <AdminDashboard />
