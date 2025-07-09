@@ -5,13 +5,13 @@ import {
   type GenerateSeatingArrangementInput,
 } from "@/ai/flows/generate-seating-arrangement";
 import * as db from '@/lib/database';
-import type { SeatingPlan } from "@/lib/types";
+import type { SeatingPlan, ExamConfig } from "@/lib/types";
 
 
 export async function generateSeatingPlanAction(
   studentDataPdfDataUri: string,
   seatingLayoutPdfDataUri: string,
-  examDateTime: Date,
+  examConfig: ExamConfig,
 ): Promise<{
   plan?: SeatingPlan[];
   error?: string;
@@ -53,12 +53,12 @@ export async function generateSeatingPlanAction(
         }
     });
 
-    await db.saveSeatingPlan(combinedPlan, examDateTime);
+    await db.saveSeatingPlan(combinedPlan, examConfig);
     
     // ** Simulation of Scheduled Tasks **
-    // In a production environment, you would now trigger a scheduled function (e.g., using Google Cloud Scheduler or Vercel Cron).
-    // 1. Schedule WhatsApp alerts: A function would be scheduled to run 1 hour before `examDateTime`. It would read the plan and send messages.
-    // 2. Schedule data deletion: Another function would be scheduled to run after the exam ends to call `deleteSeatingPlan()`.
+    // In a production environment, you would now schedule tasks.
+    // 1. Schedule WhatsApp alerts: A function would be scheduled to run 1 hour before `examConfig.startTime` for each day between `startDate` and `endDate`.
+    // 2. Schedule data deletion: Another function would be scheduled to run after `examConfig.endTime` on `examConfig.endDate` to call `deleteSeatingPlan()`.
     
     return { plan: combinedPlan };
 

@@ -9,13 +9,21 @@ export type SeatingPlan = SeatingAssignment & {
   contactNumber: string;
 };
 
+export type ExamConfig = {
+  startDate: string; // ISO Date string
+  endDate: string;   // ISO Date string
+  startTime: { hour: string; minute: string };
+  endTime: { hour: string; minute: string };
+  useSamePlan: boolean;
+};
+
 // Type for the entire stored plan in the "database"
 export type FullSeatingPlan = {
     plan: SeatingPlan[];
-    examDateTime: string; // ISO string
+    examConfig: ExamConfig;
 };
 
 // Combined type for what the student view needs
 export type StudentSeatDetails = SeatingPlan & {
-    examDateTime: string;
+    examConfig: ExamConfig;
 };

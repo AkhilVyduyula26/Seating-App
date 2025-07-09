@@ -2,7 +2,7 @@
 
 import fs from 'fs/promises';
 import path from 'path';
-import type { SeatingPlan, FullSeatingPlan, StudentSeatDetails } from '@/lib/types';
+import type { SeatingPlan, FullSeatingPlan, StudentSeatDetails, ExamConfig } from '@/lib/types';
 
 const dataFilePath = path.join(process.cwd(), '.data', 'seating-plan.json');
 const dataDir = path.dirname(dataFilePath);
@@ -51,10 +51,10 @@ async function writeData(data: FullSeatingPlan | null): Promise<void> {
 }
 
 // Service functions
-export async function saveSeatingPlan(plan: SeatingPlan[], examDateTime: Date): Promise<void> {
+export async function saveSeatingPlan(plan: SeatingPlan[], examConfig: ExamConfig): Promise<void> {
     const data: FullSeatingPlan = {
         plan,
-        examDateTime: examDateTime.toISOString(),
+        examConfig,
     };
     await writeData(data);
 }
@@ -76,7 +76,7 @@ export async function getStudentSeatByHallTicket(hallTicketNumber: string): Prom
     if (studentSeat) {
         return {
             ...studentSeat,
-            examDateTime: data.examDateTime,
+            examConfig: data.examConfig,
         };
     }
     return null;

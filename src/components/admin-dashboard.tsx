@@ -12,12 +12,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import SeatingChart from "./seating-chart";
-import { Calendar as CalendarIcon, Loader2, Zap, Trash2, AlertTriangle } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2, Zap, Trash2, AlertTriangle, Clock } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import type { FullSeatingPlan, SeatingPlan } from "@/lib/types";
+import type { FullSeatingPlan, SeatingPlan, ExamConfig } from "@/lib/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
 
 const fileToDataUri = (file: File) => new Promise<string>((resolve, reject) => {
@@ -30,11 +31,20 @@ const fileToDataUri = (file: File) => new Promise<string>((resolve, reject) => {
 const AdminFormSchema = z.object({
   studentDataPdf: z.any().refine((files) => files?.length === 1, "Student data PDF is required."),
   seatingLayoutPdf: z.any().refine((files) => files?.length === 1, "Seating layout PDF is required."),
-  examDate: z.date({ required_error: "Exam date is required." }),
-  examTime: z.object({
+  examStartDate: z.date({ required_error: "Exam start date is required." }),
+  examEndDate: z.date({ required_error: "Exam end date is required." }),
+  examStartTime: z.object({
       hour: z.string().min(1, "Hour is required."),
       minute: z.string().min(1, "Minute is required."),
   }),
+  examEndTime: z.object({
+      hour: z.string().min(1, "Hour is required."),
+      minute: z.string().min(1, "Minute is required."),
+  }),
+  useSamePlan: z.boolean().default(true),
+}).refine(data => data.examEndDate >= data.examStartDate, {
+    message: "End date cannot be before start date.",
+    path: ["examEndDate"],
 });
 
 type AdminFormType = z.infer<typeof AdminFormSchema>;
@@ -62,7 +72,9 @@ export default function AdminDashboard() {
   const form = useForm<AdminFormType>({
     resolver: zodResolver(AdminFormSchema),
     defaultValues: {
-        examTime: { hour: '10', minute: '00' }
+        examStartTime: { hour: '10', minute: '00' },
+        examEndTime: { hour: '13', minute: '00' },
+        useSamePlan: true,
     }
   });
 
@@ -74,17 +86,21 @@ export default function AdminDashboard() {
       const layoutFile = data.seatingLayoutPdf[0] as File;
       const layoutDataUri = await fileToDataUri(layoutFile);
       
-      const examDateTime = new Date(data.examDate);
-      examDateTime.setHours(parseInt(data.examTime.hour, 10));
-      examDateTime.setMinutes(parseInt(data.examTime.minute, 10));
+      const examConfig: ExamConfig = {
+        startDate: data.examStartDate.toISOString(),
+        endDate: data.examEndDate.toISOString(),
+        startTime: data.examStartTime,
+        endTime: data.examEndTime,
+        useSamePlan: data.useSamePlan,
+      };
 
-      const result = await generateSeatingPlanAction(studentDataUri, layoutDataUri, examDateTime);
+      const result = await generateSeatingPlanAction(studentDataUri, layoutDataUri, examConfig);
 
       if (result.error) {
         toast({ variant: "destructive", title: "Error", description: result.error });
       } else if (result.plan) {
         toast({ title: "Success", description: "Seating arrangement generated and saved successfully!" });
-        setSeatingData({ plan: result.plan, examDateTime: examDateTime.toISOString() });
+        setSeatingData({ plan: result.plan, examConfig });
       }
     });
   };
@@ -112,6 +128,7 @@ export default function AdminDashboard() {
   }
 
   if (seatingData) {
+    const { startDate, endDate, startTime, endTime } = seatingData.examConfig;
     return (
         <Card className="w-full shadow-lg">
             <CardHeader>
@@ -119,7 +136,8 @@ export default function AdminDashboard() {
                     <div>
                         <CardTitle>Existing Seating Chart</CardTitle>
                         <CardDescription>
-                            A seating plan is already generated for the exam on {format(new Date(seatingData.examDateTime), "PPP 'at' p")}.
+                            A seating plan is generated for exams from {format(new Date(startDate), "PPP")} to {format(new Date(endDate), "PPP")},
+                            daily from {startTime.hour}:{startTime.minute} to {endTime.hour}:{endTime.minute}.
                         </CardDescription>
                     </div>
                      <AlertDialog>
@@ -157,7 +175,7 @@ export default function AdminDashboard() {
       <CardHeader>
         <CardTitle>Admin Dashboard</CardTitle>
         <CardDescription>
-          Upload PDFs, set the exam time, and generate the seating arrangement.
+          Upload PDFs, set the exam schedule, and generate the seating arrangement.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -191,24 +209,19 @@ export default function AdminDashboard() {
                 )}
                 />
             </div>
-            
-            <div>
-                <FormLabel>Exam Date & Time</FormLabel>
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                    <FormField
-                        control={form.control}
-                        name="examDate"
-                        render={({ field }) => (
-                            <FormItem className="col-span-3 sm:col-span-1">
+
+            <div className="space-y-4">
+                <div>
+                    <FormLabel>Exam Date Range</FormLabel>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                        <FormField control={form.control} name="examStartDate" render={({ field }) => (
+                            <FormItem>
                             <Popover>
                                 <PopoverTrigger asChild>
                                 <FormControl>
-                                    <Button
-                                    variant={"outline"}
-                                    className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}
-                                    >
+                                    <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                    {field.value ? format(field.value, "PPP") : <span>Pick a start date</span>}
                                     </Button>
                                 </FormControl>
                                 </PopoverTrigger>
@@ -218,42 +231,62 @@ export default function AdminDashboard() {
                             </Popover>
                             <FormMessage />
                             </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="examTime.hour"
-                        render={({ field }) => (
-                           <FormItem>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        )} />
+                        <FormField control={form.control} name="examEndDate" render={({ field }) => (
+                            <FormItem>
+                            <Popover>
+                                <PopoverTrigger asChild>
                                 <FormControl>
-                                <SelectTrigger><SelectValue placeholder="Hour" /></SelectTrigger>
+                                    <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {field.value ? format(field.value, "PPP") : <span>Pick an end date</span>}
+                                    </Button>
                                 </FormControl>
-                                <SelectContent>
-                                    {Array.from({length: 12}, (_, i) => i + 8).map(h => <SelectItem key={h} value={String(h)}>{String(h).padStart(2,'0')}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                           </FormItem>
-                        )}
-                    />
-                     <FormField
-                        control={form.control}
-                        name="examTime.minute"
-                        render={({ field }) => (
-                           <FormItem>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                <SelectTrigger><SelectValue placeholder="Minute" /></SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {['00', '15', '30', '45'].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                           </FormItem>
-                        )}
-                    />
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                                </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                            </FormItem>
+                        )} />
+                    </div>
+                </div>
+
+                 <div>
+                    <FormLabel>Daily Exam Time</FormLabel>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2 items-center">
+                        <p className="text-sm text-muted-foreground text-center">Start</p>
+                        <FormField control={form.control} name="examStartTime.hour" render={({ field }) => (<FormItem><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Hour" /></SelectTrigger></FormControl><SelectContent>{Array.from({length: 12}, (_, i) => i + 8).map(h => <SelectItem key={h} value={String(h)}>{String(h).padStart(2,'0')}</SelectItem>)}</SelectContent></Select></FormItem>)} />
+                        <FormField control={form.control} name="examStartTime.minute" render={({ field }) => (<FormItem><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Minute" /></SelectTrigger></FormControl><SelectContent>{['00', '15', '30', '45'].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select></FormItem>)} />
+                        <div/>
+                        <p className="text-sm text-muted-foreground text-center">End</p>
+                        <FormField control={form.control} name="examEndTime.hour" render={({ field }) => (<FormItem><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Hour" /></SelectTrigger></FormControl><SelectContent>{Array.from({length: 12}, (_, i) => i + 10).map(h => <SelectItem key={h} value={String(h)}>{String(h).padStart(2,'0')}</SelectItem>)}</SelectContent></Select></FormItem>)} />
+                        <FormField control={form.control} name="examEndTime.minute" render={({ field }) => (<FormItem><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Minute" /></SelectTrigger></FormControl><SelectContent>{['00', '15', '30', '45'].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select></FormItem>)} />
+                    </div>
                 </div>
             </div>
+
+            <FormField
+              control={form.control}
+              name="useSamePlan"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Use Same Seating Plan for All Exam Days</FormLabel>
+                    <FormDescription>
+                      If enabled, the same seat is assigned to each student for the entire exam duration.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
 
             <Button type="submit" disabled={isPending} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
               {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}

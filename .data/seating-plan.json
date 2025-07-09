@@ -1,0 +1,395 @@
+{
+  "plan": [
+    {
+      "benchNumber": 1,
+      "block": "SOE2",
+      "classroom": "201",
+      "floor": "1",
+      "hallTicketNumber": "2211CS050010",
+      "name": "Navya",
+      "branch": "IoT",
+      "contactNumber": "9392361081"
+    },
+    {
+      "benchNumber": 2,
+      "block": "SOE2",
+      "classroom": "201",
+      "floor": "1",
+      "hallTicketNumber": "2211CS010717",
+      "name": "Akhil",
+      "branch": "CSE",
+      "contactNumber": "9390660752"
+    },
+    {
+      "benchNumber": 3,
+      "block": "SOE2",
+      "classroom": "201",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100003",
+      "name": "Divya",
+      "branch": "IoT",
+      "contactNumber": "9391185184"
+    },
+    {
+      "benchNumber": 4,
+      "block": "SOE2",
+      "classroom": "201",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100004",
+      "name": "Uday",
+      "branch": "IT",
+      "contactNumber": "9391199813"
+    },
+    {
+      "benchNumber": 5,
+      "block": "SOE2",
+      "classroom": "201",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100005",
+      "name": "Ramesh",
+      "branch": "CSE",
+      "contactNumber": "9391417442"
+    },
+    {
+      "benchNumber": 1,
+      "block": "SOE2",
+      "classroom": "202",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100006",
+      "name": "Chaitanya",
+      "branch": "IoT",
+      "contactNumber": "9391149544"
+    },
+    {
+      "benchNumber": 2,
+      "block": "SOE2",
+      "classroom": "202",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100007",
+      "name": "Varsha",
+      "branch": "AIML",
+      "contactNumber": "9391755044"
+    },
+    {
+      "benchNumber": 3,
+      "block": "SOE2",
+      "classroom": "202",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100008",
+      "name": "Revathi",
+      "branch": "IoT",
+      "contactNumber": "9391384139"
+    },
+    {
+      "benchNumber": 4,
+      "block": "SOE2",
+      "classroom": "202",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100009",
+      "name": "Bhavya",
+      "branch": "DS",
+      "contactNumber": "9391114175"
+    },
+    {
+      "benchNumber": 5,
+      "block": "SOE2",
+      "classroom": "202",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100010",
+      "name": "Shruthi",
+      "branch": "IT",
+      "contactNumber": "9391824615"
+    },
+    {
+      "benchNumber": 1,
+      "block": "SOE2",
+      "classroom": "203",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100011",
+      "name": "Teja",
+      "branch": "IoT",
+      "contactNumber": "9391641712"
+    },
+    {
+      "benchNumber": 2,
+      "block": "SOE2",
+      "classroom": "203",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100012",
+      "name": "Rahul",
+      "branch": "CSE",
+      "contactNumber": "9391834813"
+    },
+    {
+      "benchNumber": 3,
+      "block": "SOE2",
+      "classroom": "203",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100013",
+      "name": "Trisha",
+      "branch": "IoT",
+      "contactNumber": "9391148261"
+    },
+    {
+      "benchNumber": 4,
+      "block": "SOE2",
+      "classroom": "203",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100014",
+      "name": "Sita",
+      "branch": "IoT",
+      "contactNumber": "9391619271"
+    },
+    {
+      "benchNumber": 5,
+      "block": "SOE2",
+      "classroom": "203",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100015",
+      "name": "Sneha",
+      "branch": "IT",
+      "contactNumber": "9391771372"
+    },
+    {
+      "benchNumber": 1,
+      "block": "SOE2",
+      "classroom": "204",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100016",
+      "name": "Surya",
+      "branch": "DS",
+      "contactNumber": "9391452040"
+    },
+    {
+      "benchNumber": 2,
+      "block": "SOE2",
+      "classroom": "204",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100017",
+      "name": "Keerthi",
+      "branch": "IT",
+      "contactNumber": "9391609763"
+    },
+    {
+      "benchNumber": 3,
+      "block": "SOE2",
+      "classroom": "204",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100018",
+      "name": "Naveen",
+      "branch": "DS",
+      "contactNumber": "9391758973"
+    },
+    {
+      "benchNumber": 4,
+      "block": "SOE2",
+      "classroom": "204",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100019",
+      "name": "Gautham",
+      "branch": "DS",
+      "contactNumber": "9391682105"
+    },
+    {
+      "benchNumber": 5,
+      "block": "SOE2",
+      "classroom": "204",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100020",
+      "name": "Sandhya",
+      "branch": "AIML",
+      "contactNumber": "9391729566"
+    },
+    {
+      "benchNumber": 1,
+      "block": "SOE3",
+      "classroom": "301",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100021",
+      "name": "Lavanya",
+      "branch": "DS",
+      "contactNumber": "9391803865"
+    },
+    {
+      "benchNumber": 2,
+      "block": "SOE3",
+      "classroom": "301",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100022",
+      "name": "Nikhil",
+      "branch": "IoT",
+      "contactNumber": "9391820632"
+    },
+    {
+      "benchNumber": 3,
+      "block": "SOE3",
+      "classroom": "301",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100023",
+      "name": "Vinay",
+      "branch": "IoT",
+      "contactNumber": "9391234238"
+    },
+    {
+      "benchNumber": 4,
+      "block": "SOE3",
+      "classroom": "301",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100024",
+      "name": "Pooja",
+      "branch": "DS",
+      "contactNumber": "9391910821"
+    },
+    {
+      "benchNumber": 5,
+      "block": "SOE3",
+      "classroom": "301",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100025",
+      "name": "Kiran",
+      "branch": "DS",
+      "contactNumber": "9391386521"
+    },
+    {
+      "benchNumber": 1,
+      "block": "SOE3",
+      "classroom": "302",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100026",
+      "name": "Niharika",
+      "branch": "CSE",
+      "contactNumber": "9391333397"
+    },
+    {
+      "benchNumber": 2,
+      "block": "SOE3",
+      "classroom": "302",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100027",
+      "name": "Manoj",
+      "branch": "IT",
+      "contactNumber": "9391667375"
+    },
+    {
+      "benchNumber": 3,
+      "block": "SOE3",
+      "classroom": "302",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100028",
+      "name": "Anjali",
+      "branch": "IT",
+      "contactNumber": "9391554594"
+    },
+    {
+      "benchNumber": 4,
+      "block": "SOE3",
+      "classroom": "302",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100029",
+      "name": "Vamsi",
+      "branch": "DS",
+      "contactNumber": "9391399395"
+    },
+    {
+      "benchNumber": 5,
+      "block": "SOE3",
+      "classroom": "302",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100030",
+      "name": "Siddharth",
+      "branch": "CSE",
+      "contactNumber": "9391380413"
+    },
+    {
+      "benchNumber": 1,
+      "block": "SOE3",
+      "classroom": "303",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100031",
+      "name": "Neha",
+      "branch": "IoT",
+      "contactNumber": "9391199306"
+    },
+    {
+      "benchNumber": 2,
+      "block": "SOE3",
+      "classroom": "303",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100032",
+      "name": "Ajay",
+      "branch": "IoT",
+      "contactNumber": "9391342071"
+    },
+    {
+      "benchNumber": 3,
+      "block": "SOE3",
+      "classroom": "303",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100033",
+      "name": "Sindhu",
+      "branch": "IT",
+      "contactNumber": "9391166634"
+    },
+    {
+      "benchNumber": 4,
+      "block": "SOE3",
+      "classroom": "303",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100034",
+      "name": "Meena",
+      "branch": "AIML",
+      "contactNumber": "9391157206"
+    },
+    {
+      "benchNumber": 5,
+      "block": "SOE3",
+      "classroom": "303",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100035",
+      "name": "Arjun",
+      "branch": "AIML",
+      "contactNumber": "9391838527"
+    },
+    {
+      "benchNumber": 1,
+      "block": "SOE3",
+      "classroom": "304",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100036",
+      "name": "Priya",
+      "branch": "IoT",
+      "contactNumber": "9391115900"
+    },
+    {
+      "benchNumber": 2,
+      "block": "SOE3",
+      "classroom": "304",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100037",
+      "name": "Raj",
+      "branch": "DS",
+      "contactNumber": "9391745183"
+    },
+    {
+      "benchNumber": 3,
+      "block": "SOE3",
+      "classroom": "304",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100038",
+      "name": "Ravi",
+      "branch": "IT",
+      "contactNumber": "9391658552"
+    },
+    {
+      "benchNumber": 4,
+      "block": "SOE3",
+      "classroom": "304",
+      "floor": "1",
+      "hallTicketNumber": "2211CS100039",
+      "name": "Deepika",
+      "branch": "DS",
+      "contactNumber": "9391228563"
+    }
+  ],
+  "examDateTime": "2025-07-09T06:30:00.000Z"
+}

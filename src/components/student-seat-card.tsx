@@ -3,9 +3,10 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { User, Ticket, BookOpen, Building, Layers, School, Armchair, Calendar, Clock, Phone, AlertCircle } from "lucide-react";
-import { format } from "date-fns";
+import { eachDayOfInterval, format } from "date-fns";
 import type { StudentSeatDetails } from "@/lib/types";
 
 interface StudentSeatCardProps {
@@ -24,17 +25,34 @@ const InfoRow = ({ icon: Icon, label, value }: { icon: React.ElementType, label:
 
 export default function StudentSeatCard({ seatDetails }: StudentSeatCardProps) {
   const { toast } = useToast();
+  const { examConfig } = seatDetails;
 
   const handleWhatsAppAlert = () => {
-    const examDateTime = new Date(seatDetails.examDateTime);
     // Placeholder for actual WhatsApp API integration
     toast({
       title: "WhatsApp Alert",
-      description: `A simulated alert for the exam on ${format(examDateTime, "PPP p")} has been sent to ${seatDetails.contactNumber}.`,
+      description: `A simulated alert for your exams has been sent to ${seatDetails.contactNumber}. You will receive a reminder 1 hour before each exam.`,
     });
   };
-  
-  const examDateTime = new Date(seatDetails.examDateTime);
+
+  const getExamDates = () => {
+    try {
+      const dates = eachDayOfInterval({
+        start: new Date(examConfig.startDate),
+        end: new Date(examConfig.endDate),
+      });
+      return dates;
+    } catch (e) {
+      console.error("Invalid date range:", e);
+      // Fallback to just the start date in case of an error with the date range
+      return [new Date(examConfig.startDate)];
+    }
+  };
+
+  const examDates = getExamDates();
+  const startTime = `${examConfig.startTime.hour}:${examConfig.startTime.minute}`;
+  const endTime = `${examConfig.endTime.hour}:${examConfig.endTime.minute}`;
+
 
   return (
     <Card className="bg-card border-primary/20 shadow-xl">
@@ -64,12 +82,31 @@ export default function StudentSeatCard({ seatDetails }: StudentSeatCardProps) {
             <Separator />
             <InfoRow icon={Armchair} label="Bench Number" value={seatDetails.benchNumber} />
         </div>
-        <div className="p-4 rounded-lg border border-dashed border-accent space-y-1">
-            <h3 className="text-lg font-semibold text-center mb-2 text-accent flex items-center justify-center gap-2"><AlertCircle className="text-accent"/> Exam Details</h3>
-            <InfoRow icon={Calendar} label="Date" value={format(examDateTime, "PPP")} />
+        
+        <div className="p-4 rounded-lg border border-dashed border-accent space-y-2">
+            <h3 className="text-lg font-semibold text-center mb-2 text-accent flex items-center justify-center gap-2"><AlertCircle className="text-accent"/> Exam Schedule</h3>
+            <InfoRow icon={Clock} label="Daily Time" value={`${startTime} - ${endTime}`} />
             <Separator />
-            <InfoRow icon={Clock} label="Time" value={format(examDateTime, "p")} />
+            <div>
+              <div className="flex items-center gap-3 py-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  <p className="text-sm font-medium text-muted-foreground">Exam Dates</p>
+              </div>
+              <ScrollArea className="h-24 rounded-md border p-2 bg-background">
+                  <ul className="space-y-1">
+                      {examDates.map((date, index) => (
+                          <li key={index} className="text-sm font-semibold text-foreground text-center">
+                              {format(date, "EEEE, PPP")}
+                          </li>
+                      ))}
+                  </ul>
+              </ScrollArea>
+              {seatDetails.examConfig.useSamePlan && (
+                <p className="text-xs text-muted-foreground text-center mt-2">Your seating location is the same for all exam dates.</p>
+              )}
+            </div>
         </div>
+
       </CardContent>
       <CardFooter>
         <Button onClick={handleWhatsAppAlert} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
