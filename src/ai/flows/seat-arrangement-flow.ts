@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview This flow handles parsing student and seating layout documents to generate a seating arrangement.
@@ -57,7 +58,18 @@ const seatingArrangementFlow = ai.defineFlow(
     if (!seatingLayoutOutput) {
         return { error: "Could not extract seating layout data. Please ensure the layout file is correctly formatted with columns: 'blocks', 'floorsPerBlock', 'roomsPerFloor', 'benchesPerRoom' and is not empty." };
     }
-    const layout = seatingLayoutOutput;
+    
+    // Convert string values to numbers before calculation
+    const blocks = parseInt(String(seatingLayoutOutput.blocks), 10);
+    const floorsPerBlock = parseInt(String(seatingLayoutOutput.floorsPerBlock), 10);
+    const roomsPerFloor = parseInt(String(seatingLayoutOutput.roomsPerFloor), 10);
+    const benchesPerRoom = parseInt(String(seatingLayoutOutput.benchesPerRoom), 10);
+    
+    if (isNaN(blocks) || isNaN(floorsPerBlock) || isNaN(roomsPerFloor) || isNaN(benchesPerRoom)) {
+      return { error: "One or more values in the seating layout file are not valid numbers. Please check the file and try again." };
+    }
+
+    const layout = { blocks, floorsPerBlock, roomsPerFloor, benchesPerRoom };
     const totalCapacity = layout.blocks * layout.floorsPerBlock * layout.roomsPerFloor * layout.benchesPerRoom;
     if(totalCapacity < students.length) {
         return { error: `Not enough seats for all students. Required: ${students.length}, Available: ${totalCapacity}` };
