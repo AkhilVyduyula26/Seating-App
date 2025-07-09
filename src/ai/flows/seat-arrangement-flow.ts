@@ -6,7 +6,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, StudentSchema, SeatingLayoutSchema, SeatingAssignmentSchema } from '@/lib/types';
 
 
@@ -25,8 +25,7 @@ const seatingArrangementFlow = ai.defineFlow(
   async (input) => {
     // Step 1: Parse the Student List PDF
     const { output: studentListOutput } = await ai.generate({
-      prompt: `Extract the list of students from the provided PDF.
-      PDF: {{media url=pdf}}`,
+      prompt: `Extract the list of students from the provided PDF.`,
       context: [{ pdf: input.studentListPdf }],
       output: {
         schema: z.object({
@@ -44,8 +43,7 @@ const seatingArrangementFlow = ai.defineFlow(
 
     // Step 2: Parse the Seating Layout PDF
     const { output: seatingLayoutOutput } = await ai.generate({
-        prompt: `Extract the seating capacity details from this PDF.
-        PDF: {{media url=pdf}}`,
+        prompt: `Extract the seating capacity details from this PDF.`,
         context: [{pdf: input.seatingLayoutPdf}],
         output: {
             schema: SeatingLayoutSchema,
