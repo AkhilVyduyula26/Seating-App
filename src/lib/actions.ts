@@ -91,31 +91,46 @@ export async function deleteSeatingDataAction() {
     }
 }
 
-export async function validateFacultyIdAction(
-  facultyId: string
-): Promise<{ isValid: boolean; error?: string }> {
-  try {
-    const data = await fs.readFile(facultyAuthPath, "utf-8");
-    const authData = JSON.parse(data);
-    
-    const facultyMember = authData.authorized_faculty.find(
-      (faculty: { faculty_id: string }) => 
-        faculty.faculty_id.toLowerCase() === facultyId.toLowerCase()
-    );
+export async function validateFacultyAction(facultyId: string, secureKey: string): Promise<{
+    isValid: boolean;
+    error?: string;
+}> {
+    try {
+        const input: ValidateFacultyInput = { facultyId, secureKey };
+        const result = await validateFaculty(input);
+        return { isValid: result.isAuthorized, error: result.error };
+    } catch(e: any) {
+        console.error("Error validating faculty:", e);
+        return { isValid: false, error: e.message || "An unexpected error occurred during validation." };
+    }
+}
 
-    if (facultyMember) {
-      return { isValid: true };
-    } else {
-      return { isValid: false, error: "Unauthorized Faculty ID" };
+export async function getFacultyAuthDataAction(): Promise<{ success: boolean; data?: string; error?: string}> {
+    try {
+        const data = await fs.readFile(facultyAuthPath, 'utf-8');
+        return { success: true, data };
+    } catch (e: any) {
+        if ((e as NodeJS.ErrnoException).code === "ENOENT") {
+            return { success: false, error: "Authorization file not found." };
+        }
+        console.error("Error reading faculty auth data:", e);
+        return { success: false, error: "Failed to read faculty authorization data." };
     }
-  } catch (e: any) {
-    console.error("Error validating faculty ID:", e);
-    if ((e as NodeJS.ErrnoException).code === "ENOENT") {
-        return { isValid: false, error: "Authorization file not found. Please contact support." };
+}
+
+
+export async function updateFacultyAuthDataAction(content: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        JSON.parse(content); // Validate if the content is valid JSON
+    } catch (e) {
+        return { success: false, error: "Invalid JSON format." };
     }
-    return {
-      isValid: false,
-      error: "An unexpected error occurred during validation.",
-    };
-  }
+    
+    try {
+        await fs.writeFile(facultyAuthPath, content, 'utf-8');
+        return { success: true };
+    } catch (e: any) {
+        console.error("Error writing faculty auth data:", e);
+        return { success: false, error: "Failed to save faculty authorization data." };
+    }
 }
