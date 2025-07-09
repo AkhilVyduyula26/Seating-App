@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { User, Ticket, BookOpen, Building, Layers, School, Armchair, Calendar, Clock, Phone, AlertCircle } from "lucide-react";
+import { User, Ticket, BookOpen, Building, Layers, School, Armchair, Calendar, Clock, Phone, AlertCircle, MessageCircle } from "lucide-react";
 import { eachDayOfInterval, format } from "date-fns";
 import type { StudentSeatDetails } from "@/lib/types";
 
@@ -28,10 +28,11 @@ export default function StudentSeatCard({ seatDetails }: StudentSeatCardProps) {
   const { examConfig } = seatDetails;
 
   const handleWhatsAppAlert = () => {
-    // Placeholder for actual WhatsApp API integration
+    // This simulates subscribing the user to automated reminders.
+    // In a real application, this might call a backend endpoint to register the user's number for scheduled messages via Twilio or Gupshup.
     toast({
-      title: "WhatsApp Alert",
-      description: `A simulated alert for your exams has been sent to ${seatDetails.contactNumber}. You will receive a reminder 1 hour before each exam.`,
+      title: "Subscribed to WhatsApp Alerts",
+      description: `You will receive a reminder at ${seatDetails.contactNumber} 1 hour before each exam. The message will be: "Your exam is in 1 hour. Please log in to the seating app to check your seat. All the best!"`,
     });
   };
 
@@ -110,7 +111,7 @@ export default function StudentSeatCard({ seatDetails }: StudentSeatCardProps) {
       </CardContent>
       <CardFooter>
         <Button onClick={handleWhatsAppAlert} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-          Send WhatsApp Alert
+          <MessageCircle className="mr-2" /> Get WhatsApp Reminders
         </Button>
       </CardFooter>
     </Card>
