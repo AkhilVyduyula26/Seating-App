@@ -2,192 +2,41 @@
 "use client";
 
 import { useState } from "react";
-import { useForm, type SubmitHandler } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Bot, Home as HomeIcon, LogIn, User } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { validateFacultyAction } from "@/lib/actions";
+import { Bot, Home as HomeIcon } from "lucide-react";
 import AdminDashboard from "@/components/admin-dashboard";
-import StudentDashboard from "@/components/student-dashboard";
-import { Loader2 } from "lucide-react";
-
-const AdminLoginSchema = z.object({
-  facultyId: z.string().min(1, "Faculty ID is required."),
-});
-type AdminLoginType = z.infer<typeof AdminLoginSchema>;
-
-const StudentLoginSchema = z.object({
-  hallTicketNumber: z.string().min(1, "Hall ticket number is required."),
-});
-type StudentLoginType = z.infer<typeof StudentLoginSchema>;
+import FacultyView from "@/components/faculty-view";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
-  const [role, setRole] = useState<"admin" | "student" | "admin-dashboard" | "student-dashboard" | null>(null);
-  const [hallTicketNumber, setHallTicketNumber] = useState<string>("");
-  const [isPending, setIsPending] = useState(false);
-  const { toast } = useToast();
+  const [view, setView] = useState<"tabs" | "admin-dashboard" | "faculty-view">("tabs");
 
-  const adminForm = useForm<AdminLoginType>({
-    resolver: zodResolver(AdminLoginSchema),
-    defaultValues: { facultyId: "" },
-  });
-
-  const studentForm = useForm<StudentLoginType>({
-    resolver: zodResolver(StudentLoginSchema),
-    defaultValues: { hallTicketNumber: "" },
-  });
-
-  const handleAdminLogin: SubmitHandler<AdminLoginType> = async (data) => {
-    setIsPending(true);
-    const result = await validateFacultyAction(data.facultyId);
-    if (result.isValid) {
-      setRole("admin-dashboard");
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Login Failed",
-        description: result.error || "Unauthorized Faculty ID.",
-      });
-    }
-    setIsPending(false);
-  };
-
-  const handleStudentLogin: SubmitHandler<StudentLoginType> = (data) => {
-    setIsPending(true);
-    setHallTicketNumber(data.hallTicketNumber);
-    setRole("student-dashboard");
-    setIsPending(false);
-  };
-  
   const handleBackToHome = () => {
-    setRole(null);
-    setHallTicketNumber("");
-    adminForm.reset();
-    studentForm.reset();
-  }
+    setView("tabs");
+  };
 
   const renderContent = () => {
-    switch (role) {
+    switch (view) {
       case "admin-dashboard":
         return <AdminDashboard />;
-      case "student-dashboard":
-        return <StudentDashboard hallTicketNumber={hallTicketNumber} onBackToHome={handleBackToHome} />;
-      case "admin":
-        return (
-          <Card className="w-full max-w-md shadow-lg">
-            <CardHeader>
-              <CardTitle>Admin Login</CardTitle>
-              <CardDescription>
-                Please enter your Faculty ID to continue.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...adminForm}>
-                <form
-                  onSubmit={adminForm.handleSubmit(handleAdminLogin)}
-                  className="space-y-4"
-                >
-                  <FormField
-                    control={adminForm.control}
-                    name="facultyId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Faculty ID</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter your ID" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <Button type="submit" className="w-full" disabled={isPending}>
-                    {isPending ? <Loader2 className="animate-spin" /> : <LogIn />}
-                    Login
-                  </Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        );
-      case "student":
-        return (
-          <Card className="w-full max-w-md shadow-lg">
-            <CardHeader>
-              <CardTitle>Student Login</CardTitle>
-              <CardDescription>
-                Please enter your Hall Ticket Number to find your seat.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...studentForm}>
-                <form
-                  onSubmit={studentForm.handleSubmit(handleStudentLogin)}
-                  className="space-y-4"
-                >
-                  <FormField
-                    control={studentForm.control}
-                    name="hallTicketNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Hall Ticket Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter your ticket number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <Button type="submit" className="w-full" disabled={isPending}>
-                    {isPending ? <Loader2 className="animate-spin" /> : <LogIn />}
-                    Find My Seat
-                  </Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        );
+      case "faculty-view":
+        return <FacultyView />;
       default:
         return (
-          <Card className="w-full max-w-md shadow-lg text-center">
-            <CardHeader>
-              <CardTitle>Welcome to SeatAssignAI</CardTitle>
-              <CardDescription>Please select your role to login.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button
-                className="w-full"
-                onClick={() => setRole("admin")}
-              >
-                <LogIn className="mr-2" /> Admin Login
-              </Button>
-              <Button
-                variant="secondary"
-                className="w-full"
-                onClick={() => setRole("student")}
-              >
-                <User className="mr-2" /> Student Login
-              </Button>
-            </CardContent>
-          </Card>
+           <Tabs defaultValue="seating" className="w-full max-w-4xl">
+              <div className="flex justify-center mb-4">
+                <TabsList>
+                    <TabsTrigger value="seating">Seating Plan Generator</TabsTrigger>
+                    <TabsTrigger value="faculty">Faculty Tools</TabsTrigger>
+                </TabsList>
+              </div>
+              <TabsContent value="seating">
+                <AdminDashboard />
+              </TabsContent>
+              <TabsContent value="faculty">
+                <FacultyView />
+              </TabsContent>
+            </Tabs>
         );
     }
   };
@@ -205,19 +54,18 @@ export default function Home() {
           AI-powered Seating Arrangement for Exams
         </p>
       </header>
-       {role && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-8 right-8"
-              onClick={handleBackToHome}
-            >
-              <HomeIcon />
-              <span className="sr-only">Home</span>
-            </Button>
-        )}
+       
+       <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-8 right-8"
+            onClick={() => window.location.reload()}
+        >
+            <HomeIcon />
+            <span className="sr-only">Home</span>
+        </Button>
 
-      <main className="w-full flex items-center justify-center">
+      <main className="w-full flex items-center justify-center pt-24">
         {renderContent()}
       </main>
     </div>
