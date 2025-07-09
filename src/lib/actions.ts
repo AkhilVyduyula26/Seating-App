@@ -5,7 +5,8 @@ import path from "path";
 import {
   generateSeatingArrangement,
 } from "@/ai/flows/seat-arrangement-flow";
-import type { GenerateSeatingArrangementInput } from '@/lib/types';
+import { validateFaculty } from "@/ai/flows/validate-faculty-flow";
+import type { GenerateSeatingArrangementInput, ValidateFacultyInput } from '@/lib/types';
 
 const seatingPlanPath = path.resolve(process.cwd(), ".data/seating-plan.json");
 
@@ -40,7 +41,6 @@ export async function createSeatingPlanAction(
       return { error: result.error };
     }
     
-    // Simulate saving to a database
     await fs.mkdir(path.dirname(seatingPlanPath), { recursive: true });
     await fs.writeFile(seatingPlanPath, JSON.stringify({ plan: result.seatingPlan, examConfig }, null, 2));
 
@@ -69,7 +69,6 @@ export async function getSeatingDataAction(): Promise<{
     const parsedData = JSON.parse(data);
     return { plan: parsedData.plan, examConfig: parsedData.examConfig };
   } catch (error) {
-    // If the file doesn't exist, it's not an error, just means no plan is saved yet.
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return {};
     }
@@ -89,4 +88,26 @@ export async function deleteSeatingDataAction() {
         console.error("Error deleting seating data:", error);
         return { error: "Failed to delete seating data." };
     }
+}
+
+export async function validateFacultyAction(
+  facultyPdfDataUri: string,
+  facultyId: string,
+  secureKey: string
+) {
+  try {
+    const input: ValidateFacultyInput = {
+      facultyPdfDataUri,
+      facultyId,
+      secureKey,
+    };
+    const result = await validateFaculty(input);
+    return { isValid: result.isAuthorized, error: result.error };
+  } catch (e: any) {
+    console.error("Error validating faculty:", e);
+    return {
+      isValid: false,
+      error: e.message || "An unexpected error occurred during validation.",
+    };
+  }
 }

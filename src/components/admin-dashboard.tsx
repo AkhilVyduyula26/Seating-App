@@ -83,7 +83,7 @@ const AdminDashboardSchema = z.object({
 
 type AdminDashboardType = z.infer<typeof AdminDashboardSchema>;
 
-export default function AdminDashboard({ onBackToHome }: { onBackToHome: () => void; }) {
+export default function AdminDashboard() {
   const [isPending, startTransition] = useTransition();
   const [seatingData, setSeatingData] = useState<{ plan: any[], examConfig: ExamConfig } | null>(null);
   const { toast } = useToast();
@@ -190,15 +190,28 @@ export default function AdminDashboard({ onBackToHome }: { onBackToHome: () => v
   };
 
   if (seatingData) {
+    if (!seatingData.examConfig) {
+      return (
+         <Card className="w-full shadow-lg">
+          <CardHeader>
+            <CardTitle>Error</CardTitle>
+            <CardDescription>Seating data is incomplete. Please delete and create a new plan.</CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button onClick={handleDelete} variant="destructive" disabled={isPending}>
+                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2" />}
+                Delete Plan
+            </Button>
+          </CardFooter>
+        </Card>
+      );
+    }
     const { startDate, endDate, startTime, endTime } = seatingData.examConfig;
     return (
         <Card className="w-full shadow-lg">
             <CardHeader>
                 <CardTitle className="flex justify-between items-center">
                     <span>Generated Seating Plan</span>
-                    <Button variant="ghost" size="icon" onClick={onBackToHome}>
-                        <Home />
-                    </Button>
                 </CardTitle>
                 <CardDescription>
                     The seating plan has been successfully generated for exams from {format(startDate, 'PPP')} to {format(endDate, 'PPP')} between {startTime.hour}:{startTime.minute} and {endTime.hour}:{endTime.minute}.
@@ -223,11 +236,8 @@ export default function AdminDashboard({ onBackToHome }: { onBackToHome: () => v
         <CardTitle className="flex justify-between items-center">
             <div className="flex items-center gap-2">
                 <Table />
-                Admin Dashboard
+                Seating Plan Generator
             </div>
-            <Button variant="ghost" size="icon" onClick={onBackToHome}>
-                <Home />
-            </Button>
         </CardTitle>
         <CardDescription>
           Upload student and seating layout PDFs to generate the exam seating arrangement.

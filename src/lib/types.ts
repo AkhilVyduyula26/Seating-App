@@ -64,3 +64,20 @@ export const GenerateSeatingArrangementOutputSchema = z.object({
   error: z.string().optional().describe("An error message if the process fails."),
 });
 export type GenerateSeatingArrangementOutput = z.infer<typeof GenerateSeatingArrangementOutputSchema>;
+
+
+export const ValidateFacultyInputSchema = z.object({
+  facultyPdfDataUri: z.string().describe(
+      "A PDF file of authorized faculty, as a data URI that must include a MIME type and use Base64 encoding. The PDF contains a secure key at the top and a list of faculty members with their IDs."
+    ),
+  facultyId: z.string().describe("The Faculty ID entered by the user."),
+  secureKey: z.string().describe("The secure key entered by the user."),
+});
+export type ValidateFacultyInput = z.infer<typeof ValidateFacultyInputSchema>;
+
+
+export const ValidateFacultyOutputSchema = z.object({
+  isAuthorized: z.boolean().describe("Whether the faculty member is authorized based on the provided ID and key."),
+  error: z.string().optional().describe("An error message if validation fails for a specific reason, e.g., 'Secure key mismatch' or 'Faculty ID not found'."),
+});
+export type ValidateFacultyOutput = z.infer<typeof ValidateFacultyOutputSchema>;

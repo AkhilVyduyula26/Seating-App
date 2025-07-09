@@ -60,6 +60,10 @@ export default function FacultyView() {
 
   const form = useForm<FacultyAuthType>({
     resolver: zodResolver(FacultyAuthSchema),
+    defaultValues: {
+      facultyId: '',
+      secureKey: '',
+    },
   });
 
   const onSubmit: SubmitHandler<FacultyAuthType> = (data) => {

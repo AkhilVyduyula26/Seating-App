@@ -3,28 +3,12 @@
  * @fileOverview Validates a faculty member's credentials against a provided PDF document.
  *
  * - validateFaculty - A function that handles faculty ID and secure key validation.
- * - ValidateFacultyInput - The input type for the validateFaculty function.
- * - ValidateFacultyOutput - The return type for the validateFaculty function.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { ValidateFacultyInputSchema, ValidateFacultyOutputSchema, ValidateFacultyInput, ValidateFacultyOutput } from '@/lib/types';
 
-const ValidateFacultyInputSchema = z.object({
-  facultyPdfDataUri: z.string().describe(
-      "A PDF file of authorized faculty, as a data URI that must include a MIME type and use Base64 encoding. The PDF contains a secure key at the top and a list of faculty members with their IDs."
-    ),
-  facultyId: z.string().describe("The Faculty ID entered by the user."),
-  secureKey: z.string().describe("The secure key entered by the user."),
-});
-export type ValidateFacultyInput = z.infer<typeof ValidateFacultyInputSchema>;
-
-
-const ValidateFacultyOutputSchema = z.object({
-  isAuthorized: z.boolean().describe("Whether the faculty member is authorized based on the provided ID and key."),
-  error: z.string().optional().describe("An error message if validation fails for a specific reason, e.g., 'Secure key mismatch' or 'Faculty ID not found'."),
-});
-export type ValidateFacultyOutput = z.infer<typeof ValidateFacultyOutputSchema>;
 
 export async function validateFaculty(input: ValidateFacultyInput): Promise<ValidateFacultyOutput> {
   return validateFacultyFlow(input);
