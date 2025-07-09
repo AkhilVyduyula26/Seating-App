@@ -110,3 +110,35 @@ export async function validateFacultyAction(
     };
   }
 }
+
+export async function getFacultyAuthDataAction(): Promise<{
+  success: boolean;
+  data?: string;
+  error?: string;
+}> {
+  try {
+    const data = await fs.readFile(facultyAuthPath, 'utf-8');
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error reading faculty auth data:", error);
+    return { success: false, error: 'Could not read faculty authorization file.' };
+  }
+}
+
+
+export async function updateFacultyAuthDataAction(
+  content: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Basic validation to ensure it's valid JSON
+    JSON.parse(content);
+    await fs.writeFile(facultyAuthPath, content, 'utf-8');
+    return { success: true };
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      return { success: false, error: 'The provided content is not valid JSON.' };
+    }
+    console.error("Error writing faculty auth data:", error);
+    return { success: false, error: 'Could not save faculty authorization file.' };
+  }
+}

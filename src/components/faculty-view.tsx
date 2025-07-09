@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { validateFacultyAction } from '@/lib/actions';
+import { validateFacultyAction, getFacultyAuthDataAction, updateFacultyAuthDataAction } from '@/lib/actions';
 import {
   KeyRound,
   UserCheck,
@@ -45,6 +45,7 @@ type FacultyAuthType = z.infer<typeof FacultyAuthSchema>;
 export default function FacultyView() {
   const [isPending, startTransition] = useTransition();
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [facultyData, setFacultyData] = useState('');
   const { toast } = useToast();
 
   const form = useForm<FacultyAuthType>({
@@ -54,6 +55,21 @@ export default function FacultyView() {
       secureKey: '',
     },
   });
+
+  const fetchFacultyData = () => {
+      startTransition(async () => {
+        const result = await getFacultyAuthDataAction();
+        if(result.success && result.data){
+            setFacultyData(result.data);
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: result.error || 'Could not load faculty data.',
+            });
+        }
+      });
+  }
 
   const onSubmit: SubmitHandler<FacultyAuthType> = (data) => {
     startTransition(async () => {
@@ -66,6 +82,7 @@ export default function FacultyView() {
 
       if (result.isValid) {
         setIsAuthorized(true);
+        fetchFacultyData();
         toast({
           title: 'Validation Successful',
           description: 'Editing mode has been unlocked.',
@@ -81,6 +98,24 @@ export default function FacultyView() {
       }
     });
   };
+
+  const handleSave = () => {
+    startTransition(async () => {
+        const result = await updateFacultyAuthDataAction(facultyData);
+        if (result.success) {
+            toast({
+                title: 'Saved',
+                description: 'Your changes have been saved.',
+            });
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Save Failed',
+                description: result.error || 'An unexpected error occurred.',
+            });
+        }
+    });
+  }
 
   return (
     <Card className="w-full max-w-2xl mx-auto shadow-lg">
@@ -154,7 +189,7 @@ export default function FacultyView() {
           </form>
         </Form>
 
-        {isPending && (
+        {isPending && !facultyData && (
           <div className="mt-8 flex flex-col items-center justify-center gap-4 text-muted-foreground">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="font-medium">
@@ -171,21 +206,20 @@ export default function FacultyView() {
                 <Unlock /> Document in Edit Mode
               </h3>
               <Textarea
-                placeholder="You can now edit the document content here..."
-                rows={10}
-                className="bg-green-50/50 border-green-200 focus:ring-green-500"
+                placeholder="Loading document content..."
+                value={facultyData}
+                onChange={(e) => setFacultyData(e.target.value)}
+                rows={12}
+                className="bg-green-50/50 border-green-200 focus:ring-green-500 font-mono text-xs"
+                disabled={isPending}
               />
               <Button
                 className="w-full"
-                onClick={() => {
-                  /* Handle save logic here */
-                  toast({
-                    title: 'Saved',
-                    description: 'Your changes have been saved.',
-                  });
-                }}
+                onClick={handleSave}
+                disabled={isPending}
               >
-                <Edit className="mr-2 h-4 w-4" /> Save Changes
+                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Edit className="mr-2 h-4 w-4" />}
+                 Save Changes
               </Button>
             </div>
           ) : (
@@ -206,6 +240,7 @@ export default function FacultyView() {
             className="w-full"
             onClick={() => {
               setIsAuthorized(false);
+              setFacultyData('');
               form.reset({
                 facultyId: '',
                 secureKey: '',
