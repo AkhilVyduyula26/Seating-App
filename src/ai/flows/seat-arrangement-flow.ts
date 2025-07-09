@@ -41,9 +41,21 @@ const seatingArrangementFlow = ai.defineFlow(
     }
     const students = studentListOutput.students;
 
-    // Step 2: Parse the Seating Layout Document
+    // Step 2: Parse the Seating Layout Document with a very strict prompt
     const { output: seatingLayoutOutput } = await ai.generate({
-        prompt: `Extract the seating capacity details from this document. The document has these columns: 'blocks', 'floorsPerBlock', 'roomsPerFloor', 'benchesPerRoom'. There will be only one row of data. Return it as a JSON object.`,
+        prompt: `You are a data extraction specialist. Your task is to extract data from an Excel file and return it as a valid JSON object.
+
+CRITICAL: All values for 'blocks', 'floorsPerBlock', 'roomsPerFloor', and 'benchesPerRoom' MUST be numbers, not strings.
+
+EXAMPLE: If the file has 2 blocks, 3 floors, 10 rooms, and 20 benches, the output MUST be:
+{
+  "blocks": 2,
+  "floorsPerBlock": 3,
+  "roomsPerFloor": 10,
+  "benchesPerRoom": 20
+}
+
+Now, extract the data from the provided document. The document has these columns: 'blocks', 'floorsPerBlock', 'roomsPerFloor', 'benchesPerRoom'. There will be only one row of data.`,
         context: [{ document: { data: input.seatingLayoutDoc, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" } }],
         output: {
             schema: SeatingLayoutSchema,
