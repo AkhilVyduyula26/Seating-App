@@ -161,7 +161,7 @@ export default function AdminDashboard() {
       } else {
         toast({
           variant: "destructive",
-          title: "Error",
+          title: "Error Creating Plan",
           description: result.error,
         });
       }

@@ -25,7 +25,9 @@ const seatingArrangementFlow = ai.defineFlow(
   async (input) => {
     // Step 1: Parse the Student List Document
     const { output: studentListOutput } = await ai.generate({
-      prompt: `Extract the list of students from the provided document.`,
+      prompt: `Extract the list of students from the provided Excel document.
+      The document contains the following columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber'.
+      Return the data as a JSON object with a 'students' array.`,
       context: [{ document: { data: input.studentListDoc, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" } }],
       output: {
         schema: z.object({
@@ -36,14 +38,16 @@ const seatingArrangementFlow = ai.defineFlow(
     });
     
     if (!studentListOutput?.students || studentListOutput.students.length === 0) {
-        return { error: "Could not extract any student data from the provided student list file. Please ensure the file is correctly formatted and not empty." };
+        return { error: "Could not extract any student data from the student list file. Please ensure the file is correctly formatted with columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber' and is not empty." };
     }
     const students = studentListOutput.students;
 
 
     // Step 2: Parse the Seating Layout Document
     const { output: seatingLayoutOutput } = await ai.generate({
-        prompt: `Extract the seating capacity details from this document.`,
+        prompt: `Extract the seating capacity details from this Excel document.
+        The document contains columns for: 'blocks', 'floorsPerBlock', 'roomsPerFloor', 'benchesPerRoom'.
+        There will be only one row of data. Return it as a JSON object.`,
         context: [{ document: { data: input.seatingLayoutDoc, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" } }],
         output: {
             schema: SeatingLayoutSchema,
@@ -52,7 +56,7 @@ const seatingArrangementFlow = ai.defineFlow(
     });
 
     if (!seatingLayoutOutput) {
-        return { error: "Could not extract seating layout data from the provided layout file. Please ensure the file is correctly formatted and not empty." };
+        return { error: "Could not extract seating layout data from the layout file. Please ensure the file is correctly formatted with columns: 'blocks', 'floorsPerBlock', 'roomsPerFloor', 'benchesPerRoom' and is not empty." };
     }
     const layout = seatingLayoutOutput;
     const totalCapacity = layout.blocks * layout.floorsPerBlock * layout.roomsPerFloor * layout.benchesPerRoom;
@@ -80,7 +84,7 @@ STUDENT LIST:
 ${JSON.stringify(students, null, 2)}
 \`\`\`
 
-Generate the full seating plan based on these rules and return it as a JSON array.`,
+Generate the full seating plan based on these rules and return it as a JSON object with a 'seatingPlan' array.`,
       output: {
         schema: z.object({
           seatingPlan: z.array(SeatingAssignmentSchema),
@@ -90,7 +94,7 @@ Generate the full seating plan based on these rules and return it as a JSON arra
     });
 
     if (!arrangementOutput?.seatingPlan) {
-        return { error: "Failed to generate the seating arrangement." };
+        return { error: "Failed to generate the seating arrangement. The AI model could not create a valid plan." };
     }
     
     return { seatingPlan: arrangementOutput.seatingPlan };
