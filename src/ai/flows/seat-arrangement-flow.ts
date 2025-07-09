@@ -26,9 +26,7 @@ const seatingArrangementFlow = ai.defineFlow(
   async (input) => {
     // Step 1: Parse the Student List Document
     const { output: studentListOutput } = await ai.generate({
-      prompt: `Extract the list of students from the provided document.
-      The document has these columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber'.
-      Return the data as a JSON object with a 'students' array.`,
+      prompt: `Extract the list of students from the provided document. The document has these columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber'. Return the data as a JSON object with a 'students' array.`,
       context: [{ document: { data: input.studentListDoc, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" } }],
       output: {
         schema: z.object({
@@ -45,9 +43,7 @@ const seatingArrangementFlow = ai.defineFlow(
 
     // Step 2: Parse the Seating Layout Document
     const { output: seatingLayoutOutput } = await ai.generate({
-        prompt: `Extract the seating capacity details from this document.
-        The document has these columns: 'blocks', 'floorsPerBlock', 'roomsPerFloor', 'benchesPerRoom'.
-        There will be only one row of data. Return it as a JSON object.`,
+        prompt: `Extract the seating capacity details from this document. The document has these columns: 'blocks', 'floorsPerBlock', 'roomsPerFloor', 'benchesPerRoom'. There will be only one row of data. Return it as a JSON object.`,
         context: [{ document: { data: input.seatingLayoutDoc, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" } }],
         output: {
             schema: SeatingLayoutSchema,
@@ -76,25 +72,25 @@ const seatingArrangementFlow = ai.defineFlow(
 
     // Step 3: Generate the seating arrangement by calling another prompt/flow
     const { output: arrangementOutput } = await ai.generate({
-      prompt: `You are a seating arrangement coordinator for an exam. Your task is to assign seats to students based on a list and a set of rules.
+      prompt: `You are a seating arrangement coordinator for an exam. Your task is to assign seats to students based on a list and a set of rules. You MUST follow these rules exactly.
 
 RULES:
-1.  Assign a unique seat to every student.
-2.  **Crucial Rule**: To prevent cheating, no two students from the same branch should be seated directly next to each other (i.e., on consecutive benches in the same room).
-3.  Fill seats sequentially: Block -> Floor -> Room -> Bench.
+1.  Assign a unique seat to every student from the provided list. Do not invent students.
+2.  **CRUCIAL ANTI-CHEATING RULE**: To prevent cheating, no two students from the same branch (e.g., two 'CSE' students) should be seated directly next to each other on consecutive benches in the same room. You must alternate branches.
+3.  Fill seats sequentially: Fill all benches in a room, then all rooms on a floor, then all floors in a block, before moving to the next block. (Block -> Floor -> Room -> Bench).
 
-AVAILABLE SEATING:
+AVAILABLE SEATING LAYOUT:
 - Total Blocks: ${layout.blocks} (Named SOE1, SOE2, etc.)
 - Floors per Block: ${layout.floorsPerBlock} (Numbered 1, 2, 3...)
-- Classrooms per Floor: ${layout.roomsPerFloor} (Numbered starting from 101, 102... for floor 1, 201, 202... for floor 2, etc.)
+- Classrooms per Floor: ${layout.roomsPerFloor} (Numbered starting from 101, 102... for floor 1; 201, 202... for floor 2, etc.)
 - Benches per Classroom: ${layout.benchesPerRoom} (Numbered 1, 2, 3...)
 
-STUDENT LIST:
+STUDENT LIST TO BE SEATED:
 \`\`\`json
 ${JSON.stringify(students, null, 2)}
 \`\`\`
 
-Generate the full seating plan based on these rules and return it as a JSON object with a 'seatingPlan' array.`,
+Based on the rules, layout, and student list above, generate the complete seating plan. The output must be a JSON object with a 'seatingPlan' array containing an entry for every single student.`,
       output: {
         schema: z.object({
           seatingPlan: z.array(SeatingAssignmentSchema),
