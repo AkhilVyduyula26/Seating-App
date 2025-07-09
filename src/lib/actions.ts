@@ -6,14 +6,14 @@ import {
   generateSeatingArrangement,
 } from "@/ai/flows/seat-arrangement-flow";
 import { validateFaculty } from "@/ai/flows/validate-faculty-flow";
-import type { GenerateSeatingArrangementInput, ValidateFacultyInput } from '@/lib/types';
+import type { GenerateSeatingArrangementInput, ValidateFacultyInput, ExamConfig } from '@/lib/types';
 
 const seatingPlanPath = path.resolve(process.cwd(), ".data/seating-plan.json");
 
 export async function createSeatingPlanAction(
   studentListDataUri: string,
   seatingLayoutDataUri: string,
-  examConfig: GenerateSeatingArrangementInput['examConfig']
+  examConfig: ExamConfig
 ) {
   try {
     if (
@@ -61,7 +61,7 @@ export async function createSeatingPlanAction(
 
 export async function getSeatingDataAction(): Promise<{
   plan?: any[];
-  examConfig?: GenerateSeatingArrangementInput['examConfig'];
+  examConfig?: ExamConfig;
   error?: string;
 }> {
   try {

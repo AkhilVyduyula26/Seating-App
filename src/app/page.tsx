@@ -43,7 +43,7 @@ export default function Home() {
                   <TabsTrigger value="seating"><Shield className="mr-2" /> Seating Admin</TabsTrigger>
                   <TabsTrigger value="faculty"><UserCheck className="mr-2" /> Faculty Tools</TabsTrigger>
               </TabsList>
-              <Button variant="outline" onClick={() => setRole(null)}><HomeIcon className="mr-2" /> Back to Home</Button>
+              <Button variant="outline" onClick={() => setRole(null)}><HomeIcon className="mr-2 h-4 w-4" /> Back to Home</Button>
             </div>
             <TabsContent value="seating">
                 <AdminDashboard />
@@ -87,7 +87,7 @@ export default function Home() {
             className="w-full"
             onClick={() => setRole("admin")}
           >
-            <Shield className="mr-2" /> Admin Login
+            <Shield className="mr-2 h-4 w-4" /> Admin Login
           </Button>
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
@@ -114,7 +114,7 @@ export default function Home() {
               onClick={handleStudentLogin}
               disabled={!hallTicketNumber}
             >
-              <User className="mr-2" /> Student Login
+              <User className="mr-2 h-4 w-4" /> Student Login
             </Button>
           </div>
         </CardContent>

@@ -30,13 +30,14 @@ export const SeatingAssignmentSchema = z.object({
 });
 export type SeatingAssignment = z.infer<typeof SeatingAssignmentSchema>;
 
-export type ExamConfig = {
-    startDate: Date;
-    endDate: Date;
-    startTime: { hour: string; minute: string };
-    endTime: { hour: string; minute: string };
-    useSamePlan: boolean;
-};
+const ExamConfigSchema = z.object({
+    startDate: z.date(),
+    endDate: z.date(),
+    startTime: z.object({ hour: z.string(), minute: z.string() }),
+    endTime: z.object({ hour: z.string(), minute: z.string() }),
+    useSamePlan: z.boolean(),
+});
+export type ExamConfig = z.infer<typeof ExamConfigSchema>;
 
 export const GenerateSeatingArrangementInputSchema = z.object({
   studentListPdf: z
@@ -49,13 +50,7 @@ export const GenerateSeatingArrangementInputSchema = z.object({
     .describe(
       "A PDF file containing the seating capacity and layout details, as a data URI."
     ),
-   examConfig: z.object({
-    startDate: z.date(),
-    endDate: z.date(),
-    startTime: z.object({ hour: z.string(), minute: z.string() }),
-    endTime: z.object({ hour: z.string(), minute: z.string() }),
-    useSamePlan: z.boolean(),
-  }),
+   examConfig: ExamConfigSchema,
 });
 export type GenerateSeatingArrangementInput = z.infer<typeof GenerateSeatingArrangementInputSchema>;
 

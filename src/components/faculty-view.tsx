@@ -105,7 +105,7 @@ export default function FacultyView() {
         </CardTitle>
         <CardDescription>
           Upload the faculty authorization PDF and enter your credentials to
-          unlock editing capabilities.
+          unlock editing capabilities. The document cannot be deleted.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -220,7 +220,7 @@ export default function FacultyView() {
                   });
                 }}
               >
-                <Edit className="mr-2" /> Save Changes
+                <Edit className="mr-2 h-4 w-4" /> Save Changes
               </Button>
             </div>
           ) : (
