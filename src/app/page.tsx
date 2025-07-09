@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bot, Home as HomeIcon, LogIn } from "lucide-react";
+import { Bot, Home as HomeIcon, LogIn, User, Settings, ShieldCheck } from "lucide-react";
 import AdminDashboard from "@/components/admin-dashboard";
 import FacultyView from "@/components/faculty-view";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,8 +16,9 @@ import StudentDashboard from "@/components/student-dashboard";
 
 
 export default function Home() {
-  const [role, setRole] = useState<"admin" | "student" | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [activeTab, setActiveTab] = useState("admin");
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [isStudentLoggedIn, setIsStudentLoggedIn] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [facultyId, setFacultyId] = useState("");
   const [hallTicketNumber, setHallTicketNumber] = useState("");
@@ -28,7 +29,7 @@ export default function Home() {
      startTransition(async () => {
         const result = await validateFacultyAction(facultyId);
         if (result.isValid) {
-            setIsLoggedIn(true);
+            setIsAdminLoggedIn(true);
         } else {
             toast({
                 variant: "destructive",
@@ -42,7 +43,7 @@ export default function Home() {
   const handleStudentLogin = () => {
     if (hallTicketNumber.trim()) {
         setSubmittedHallTicket(hallTicketNumber);
-        setIsLoggedIn(true);
+        setIsStudentLoggedIn(true);
     } else {
         toast({
             variant: "destructive",
@@ -53,90 +54,89 @@ export default function Home() {
   };
   
   const handleBackToHome = () => {
-    setRole(null);
-    setIsLoggedIn(false);
+    setIsAdminLoggedIn(false);
+    setIsStudentLoggedIn(false);
     setFacultyId("");
     setHallTicketNumber("");
     setSubmittedHallTicket("");
+    // Reset to the default tab if needed, e.g., 'admin'
+    setActiveTab("admin");
   }
 
-
   const renderContent = () => {
-    if (isLoggedIn) {
-        if (role === 'admin') {
-            return <AdminDashboard />;
-        }
-        if (role === 'student' && submittedHallTicket) {
-            return <StudentDashboard hallTicketNumber={submittedHallTicket} onBackToHome={handleBackToHome} />;
-        }
+    if (isAdminLoggedIn) {
+        return <AdminDashboard />;
+    }
+    if (isStudentLoggedIn) {
+        return <StudentDashboard hallTicketNumber={submittedHallTicket} onBackToHome={handleBackToHome} />;
     }
     
-    if (role) {
-        return (
-             <Card className="w-full max-w-md shadow-lg">
+    return (
+        <Card className="w-full max-w-md shadow-lg">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <LogIn />
-                        {role === 'admin' ? 'Admin Login' : 'Student Login'}
+                    <CardTitle className="flex items-center justify-center gap-2">
+                        <LogIn className="h-6 w-6"/> Login
                     </CardTitle>
-                    <CardDescription>
-                        Please enter your credentials to proceed.
-                    </CardDescription>
+                    <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="admin"><ShieldCheck className="mr-2 h-4 w-4"/>Admin</TabsTrigger>
+                        <TabsTrigger value="student"><User className="mr-2 h-4 w-4"/>Student</TabsTrigger>
+                        <TabsTrigger value="faculty"><Settings className="mr-2 h-4 w-4"/>Faculty Tools</TabsTrigger>
+                    </TabsList>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    {role === 'admin' ? (
+
+                <TabsContent value="admin">
+                    <CardContent className="space-y-4">
+                         <CardDescription className="text-center">
+                            Please enter your Faculty ID to manage seating.
+                        </CardDescription>
                         <Input 
                             placeholder="Enter Faculty ID"
                             value={facultyId}
                             onChange={(e) => setFacultyId(e.target.value)}
                             disabled={isPending}
                         />
-                    ) : (
-                         <Input 
+                    </CardContent>
+                    <CardFooter>
+                         <Button 
+                            className="w-full" 
+                            onClick={handleAdminLogin}
+                            disabled={isPending}
+                        >
+                            {isPending ? "Logging in..." : "Admin Login"}
+                        </Button>
+                    </CardFooter>
+                </TabsContent>
+
+                <TabsContent value="student">
+                     <CardContent className="space-y-4">
+                         <CardDescription className="text-center">
+                            Please enter your Hall Ticket Number to view your seat.
+                        </CardDescription>
+                        <Input 
                             placeholder="Enter Hall Ticket Number"
                             value={hallTicketNumber}
                             onChange={(e) => setHallTicketNumber(e.target.value)}
                          />
-                    )}
-                </CardContent>
-                <CardFooter className="flex flex-col gap-4">
-                     <Button 
-                        className="w-full" 
-                        onClick={role === 'admin' ? handleAdminLogin : handleStudentLogin}
-                        disabled={isPending}
-                    >
-                        {isPending ? "Logging in..." : "Login"}
-                    </Button>
-                    <Button variant="outline" className="w-full" onClick={handleBackToHome}>
-                        Back
-                    </Button>
-                </CardFooter>
-            </Card>
-        )
-    }
+                    </CardContent>
+                    <CardFooter>
+                         <Button 
+                            className="w-full" 
+                            onClick={handleStudentLogin}
+                        >
+                           Student Login
+                        </Button>
+                    </CardFooter>
+                </TabsContent>
 
-    return (
-        <Card className="w-full max-w-md shadow-lg">
-            <CardHeader>
-                <CardTitle>Welcome</CardTitle>
-                <CardDescription>Please select your role to login.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                 <Button
-                    className="w-full"
-                    onClick={() => setRole("admin")}
-                >
-                    Admin Login
-                </Button>
-                 <Button
-                    className="w-full"
-                    onClick={() => setRole("student")}
-                >
-                    Student Login
-                </Button>
-            </CardContent>
+                <TabsContent value="faculty">
+                   <CardContent>
+                        <FacultyView />
+                   </CardContent>
+                </TabsContent>
+            </Tabs>
         </Card>
-    );
+    )
   };
 
   return (
@@ -153,15 +153,17 @@ export default function Home() {
         </p>
       </header>
        
-       <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-8 right-8"
-            onClick={handleBackToHome}
-        >
-            <HomeIcon />
-            <span className="sr-only">Home</span>
-        </Button>
+       {(isAdminLoggedIn || isStudentLoggedIn) && (
+            <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-8 right-8"
+                onClick={handleBackToHome}
+            >
+                <HomeIcon />
+                <span className="sr-only">Home</span>
+            </Button>
+       )}
 
       <main className="w-full flex items-center justify-center pt-24">
         {renderContent()}

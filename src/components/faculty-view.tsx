@@ -118,26 +118,22 @@ export default function FacultyView() {
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto shadow-lg">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <UserCheck />
-          Faculty Document Access
-        </CardTitle>
+    <div className="w-full mx-auto">
+      <CardHeader className="p-0 mb-4">
         <CardDescription>
-          Enter your credentials to unlock editing capabilities. The document cannot be deleted.
+          To edit the faculty access list, enter valid credentials to unlock the editor.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-1 gap-4">
               <FormField
                 control={form.control}
                 name="facultyId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center gap-2">
+                    <FormLabel className="flex items-center gap-2 text-xs">
                       <UserCheck /> Faculty ID
                     </FormLabel>
                     <FormControl>
@@ -156,13 +152,13 @@ export default function FacultyView() {
                 name="secureKey"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center gap-2">
+                    <FormLabel className="flex items-center gap-2 text-xs">
                       <KeyRound /> Secure Key
                     </FormLabel>
                     <FormControl>
                       <Input
                         type="password"
-                        placeholder="Enter the document's secure key"
+                        placeholder="Enter the secure key"
                         {...field}
                         disabled={isPending || isAuthorized}
                       />
@@ -189,72 +185,64 @@ export default function FacultyView() {
           </form>
         </Form>
 
-        {isPending && !facultyData && (
-          <div className="mt-8 flex flex-col items-center justify-center gap-4 text-muted-foreground">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="font-medium">
-              Validating your credentials...
-            </p>
-            <p className="text-sm">Please wait a moment.</p>
+        {isPending && !facultyData && !isAuthorized &&(
+          <div className="mt-4 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <p className="text-sm">Validating...</p>
           </div>
         )}
 
-        <div className="mt-8">
+        <div className="mt-4">
           {isAuthorized ? (
             <div className="animate-in fade-in duration-500 space-y-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2 text-green-600">
-                <Unlock /> Document in Edit Mode
-              </h3>
-              <Textarea
+               <Textarea
                 placeholder="Loading document content..."
                 value={facultyData}
                 onChange={(e) => setFacultyData(e.target.value)}
-                rows={12}
+                rows={8}
                 className="bg-green-50/50 border-green-200 focus:ring-green-500 font-mono text-xs"
                 disabled={isPending}
               />
-              <Button
-                className="w-full"
-                onClick={handleSave}
-                disabled={isPending}
-              >
-                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Edit className="mr-2 h-4 w-4" />}
-                 Save Changes
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                    className="w-full"
+                    onClick={handleSave}
+                    disabled={isPending}
+                >
+                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Edit className="mr-2 h-4 w-4" />}
+                    Save Changes
+                </Button>
+                 <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                    setIsAuthorized(false);
+                    setFacultyData('');
+                    form.reset({
+                        facultyId: '',
+                        secureKey: '',
+                    });
+                    toast({
+                        title: 'Locked',
+                        description: 'The document is now in read-only mode.',
+                    });
+                    }}
+                >
+                    Lock Document
+                </Button>
+              </div>
             </div>
           ) : (
-            <div className="text-center p-4 rounded-lg bg-secondary border border-dashed">
+            <div className="text-center p-4 rounded-lg bg-secondary border border-dashed mt-4">
               <ShieldAlert className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-              <h3 className="font-semibold">Document is Read-Only</h3>
+              <h3 className="font-semibold">Editor is Locked</h3>
               <p className="text-sm text-muted-foreground">
-                Please provide valid credentials to unlock editing.
+                Provide credentials to edit.
               </p>
             </div>
           )}
         </div>
       </CardContent>
-      {isAuthorized && (
-        <CardFooter>
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => {
-              setIsAuthorized(false);
-              setFacultyData('');
-              form.reset({
-                facultyId: '',
-                secureKey: '',
-              });
-              toast({
-                title: 'Locked',
-                description: 'The document is now in read-only mode.',
-              });
-            }}
-          >
-            Lock Document & Reset
-          </Button>
-        </CardFooter>
-      )}
-    </Card>
+    </div>
   );
 }
