@@ -8,7 +8,6 @@
  */
 
 import {ai} from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/googleai';
 import {z} from 'genkit';
 
 const StudentSchema = z.object({
@@ -79,9 +78,7 @@ const generateSeatingArrangementFlow = ai.defineFlow(
     outputSchema: GenerateSeatingArrangementOutputSchema,
   },
   async input => {
-    const model = googleAI({apiKey: "AIzaSyCWY89uq8p6E8F-LGPBtAzg0EKT9Xpn5M4"}).model('gemini-2.0-flash');
-
-    const {output} = await generateSeatingArrangementPrompt(input, { model });
+    const {output} = await generateSeatingArrangementPrompt(input);
     return output!;
   }
 );
