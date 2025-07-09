@@ -64,12 +64,12 @@ const timeOptions = (interval: number) => {
 };
 
 const AdminDashboardSchema = z.object({
-  studentListPdf: z
+  studentListDoc: z
     .any()
-    .refine((files) => files?.length === 1, "Student list PDF is required."),
-  seatingLayoutPdf: z
+    .refine((files) => files?.length === 1, "Student list file is required."),
+  seatingLayoutDoc: z
     .any()
-    .refine((files) => files?.length === 1, "Seating layout PDF is required."),
+    .refine((files) => files?.length === 1, "Seating layout file is required."),
   startDate: z.date({ required_error: "Start date is required." }),
   endDate: z.date({ required_error: "End date is required." }),
   startTime: z.string({ required_error: "Start time is required." }),
@@ -114,8 +114,8 @@ export default function AdminDashboard() {
 
   const onSubmit: SubmitHandler<AdminDashboardType> = (data) => {
     startTransition(async () => {
-      const studentFile = data.studentListPdf[0] as File;
-      const layoutFile = data.seatingLayoutPdf[0] as File;
+      const studentFile = data.studentListDoc[0] as File;
+      const layoutFile = data.seatingLayoutDoc[0] as File;
       
       const [studentListDataUri, seatingLayoutDataUri] = await Promise.all([
         fileToDataUri(studentFile),
@@ -247,7 +247,7 @@ export default function AdminDashboard() {
             </div>
         </CardTitle>
         <CardDescription>
-          Upload student and seating layout PDFs to generate the exam seating arrangement.
+          Upload student and seating layout Excel files to generate the exam seating arrangement.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -256,16 +256,16 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                 control={form.control}
-                name="studentListPdf"
+                name="studentListDoc"
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel className="flex items-center gap-2">
-                        <FileUp /> Student List PDF
+                        <FileUp /> Student List File
                     </FormLabel>
                     <FormControl>
                         <Input
                         type="file"
-                        accept="application/pdf"
+                        accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                         onChange={(e) => field.onChange(e.target.files)}
                         />
                     </FormControl>
@@ -275,16 +275,16 @@ export default function AdminDashboard() {
                 />
                 <FormField
                 control={form.control}
-                name="seatingLayoutPdf"
+                name="seatingLayoutDoc"
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel className="flex items-center gap-2">
-                        <FileUp /> Seating Layout PDF
+                        <FileUp /> Seating Layout File
                     </FormLabel>
                     <FormControl>
                         <Input
                         type="file"
-                        accept="application/pdf"
+                        accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                         onChange={(e) => field.onChange(e.target.files)}
                         />
                     </FormControl>

@@ -40,15 +40,15 @@ const ExamConfigSchema = z.object({
 export type ExamConfig = z.infer<typeof ExamConfigSchema>;
 
 export const GenerateSeatingArrangementInputSchema = z.object({
-  studentListPdf: z
+  studentListDoc: z
     .string()
     .describe(
-      "A PDF file containing the list of students, as a data URI."
+      "An Excel file containing the list of students, as a data URI."
     ),
-  seatingLayoutPdf: z
+  seatingLayoutDoc: z
     .string()
     .describe(
-      "A PDF file containing the seating capacity and layout details, as a data URI."
+      "An Excel file containing the seating capacity and layout details, as a data URI."
     ),
    examConfig: ExamConfigSchema,
 });

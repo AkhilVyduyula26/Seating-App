@@ -1,8 +1,8 @@
 'use server';
 /**
- * @fileOverview This flow handles parsing student and seating layout PDFs to generate a seating arrangement.
+ * @fileOverview This flow handles parsing student and seating layout documents to generate a seating arrangement.
  * 
- * - generateSeatingArrangement - A function that orchestrates the PDF parsing and seat assignment.
+ * - generateSeatingArrangement - A function that orchestrates the document parsing and seat assignment.
  */
 
 import { ai } from '@/ai/genkit';
@@ -23,10 +23,10 @@ const seatingArrangementFlow = ai.defineFlow(
     outputSchema: GenerateSeatingArrangementOutputSchema,
   },
   async (input) => {
-    // Step 1: Parse the Student List PDF
+    // Step 1: Parse the Student List Document
     const { output: studentListOutput } = await ai.generate({
-      prompt: `Extract the list of students from the provided PDF.`,
-      context: [{ pdf: input.studentListPdf }],
+      prompt: `Extract the list of students from the provided document.`,
+      context: [{ document: input.studentListDoc }],
       output: {
         schema: z.object({
           students: z.array(StudentSchema),
@@ -36,15 +36,15 @@ const seatingArrangementFlow = ai.defineFlow(
     });
     
     if (!studentListOutput?.students || studentListOutput.students.length === 0) {
-        return { error: "Could not extract any student data from the provided student list PDF." };
+        return { error: "Could not extract any student data from the provided student list file." };
     }
     const students = studentListOutput.students;
 
 
-    // Step 2: Parse the Seating Layout PDF
+    // Step 2: Parse the Seating Layout Document
     const { output: seatingLayoutOutput } = await ai.generate({
-        prompt: `Extract the seating capacity details from this PDF.`,
-        context: [{pdf: input.seatingLayoutPdf}],
+        prompt: `Extract the seating capacity details from this document.`,
+        context: [{document: input.seatingLayoutDoc}],
         output: {
             schema: SeatingLayoutSchema,
         },
@@ -52,7 +52,7 @@ const seatingArrangementFlow = ai.defineFlow(
     });
 
     if (!seatingLayoutOutput) {
-        return { error: "Could not extract seating layout data from the provided layout PDF." };
+        return { error: "Could not extract seating layout data from the provided layout file." };
     }
     const layout = seatingLayoutOutput;
     const totalCapacity = layout.blocks * layout.floorsPerBlock * layout.roomsPerFloor * layout.benchesPerRoom;

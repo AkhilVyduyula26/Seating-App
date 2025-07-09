@@ -13,27 +13,27 @@ const seatingPlanPath = path.resolve(process.cwd(), ".data/seating-plan.json");
 const facultyAuthPath = path.resolve(process.cwd(), ".data/faculty-auth.json");
 
 export async function createSeatingPlanAction(
-  studentListDataUri: string,
-  seatingLayoutDataUri: string,
+  studentListDocDataUri: string,
+  seatingLayoutDocDataUri: string,
   examConfig: ExamConfig
 ) {
   try {
     if (
-      !studentListDataUri ||
-      !studentListDataUri.startsWith("data:application/pdf;base64,")
+      !studentListDocDataUri ||
+      !studentListDocDataUri.startsWith("data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,")
     ) {
-      return { error: "Invalid student list PDF file." };
+      return { error: "Invalid student list Excel file." };
     }
     if (
-      !seatingLayoutDataUri ||
-      !seatingLayoutDataUri.startsWith("data:application/pdf;base64,")
+      !seatingLayoutDocDataUri ||
+      !seatingLayoutDocDataUri.startsWith("data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,")
     ) {
-      return { error: "Invalid seating layout PDF file." };
+      return { error: "Invalid seating layout Excel file." };
     }
 
     const input: GenerateSeatingArrangementInput = {
-      studentListPdf: studentListDataUri,
-      seatingLayoutPdf: seatingLayoutDataUri,
+      studentListDoc: studentListDocDataUri,
+      seatingLayoutDoc: seatingLayoutDocDataUri,
       examConfig
     };
     
