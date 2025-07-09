@@ -63,7 +63,7 @@ export type GenerateSeatingArrangementOutput = z.infer<typeof GenerateSeatingArr
 
 export const ValidateFacultyInputSchema = z.object({
   facultyId: z.string().describe("The Faculty ID entered by the user."),
-  secureKey: z.string().describe("The secure key entered by the user."),
+  secureKey: z.string().optional().describe("The secure key entered by the user."),
 });
 export type ValidateFacultyInput = z.infer<typeof ValidateFacultyInputSchema>;
 

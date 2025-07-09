@@ -91,54 +91,31 @@ export async function deleteSeatingDataAction() {
     }
 }
 
-export async function validateFacultyAction(
-  facultyId: string,
-  secureKey: string
-) {
+export async function validateFacultyIdAction(
+  facultyId: string
+): Promise<{ isValid: boolean; error?: string }> {
   try {
-    const input: ValidateFacultyInput = {
-      facultyId,
-      secureKey,
-    };
-    const result = await validateFaculty(input);
-    return { isValid: result.isAuthorized, error: result.error };
+    const data = await fs.readFile(facultyAuthPath, "utf-8");
+    const authData = JSON.parse(data);
+    
+    const facultyMember = authData.authorized_faculty.find(
+      (faculty: { faculty_id: string }) => 
+        faculty.faculty_id.toLowerCase() === facultyId.toLowerCase()
+    );
+
+    if (facultyMember) {
+      return { isValid: true };
+    } else {
+      return { isValid: false, error: "Unauthorized Faculty ID" };
+    }
   } catch (e: any) {
-    console.error("Error validating faculty:", e);
+    console.error("Error validating faculty ID:", e);
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") {
+        return { isValid: false, error: "Authorization file not found. Please contact support." };
+    }
     return {
       isValid: false,
-      error: e.message || "An unexpected error occurred during validation.",
+      error: "An unexpected error occurred during validation.",
     };
-  }
-}
-
-export async function getFacultyAuthDataAction(): Promise<{
-  success: boolean;
-  data?: string;
-  error?: string;
-}> {
-  try {
-    const data = await fs.readFile(facultyAuthPath, 'utf-8');
-    return { success: true, data };
-  } catch (error) {
-    console.error("Error reading faculty auth data:", error);
-    return { success: false, error: 'Could not read faculty authorization file.' };
-  }
-}
-
-
-export async function updateFacultyAuthDataAction(
-  content: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    // Basic validation to ensure it's valid JSON
-    JSON.parse(content);
-    await fs.writeFile(facultyAuthPath, content, 'utf-8');
-    return { success: true };
-  } catch (error) {
-    if (error instanceof SyntaxError) {
-      return { success: false, error: 'The provided content is not valid JSON.' };
-    }
-    console.error("Error writing faculty auth data:", error);
-    return { success: false, error: 'Could not save faculty authorization file.' };
   }
 }

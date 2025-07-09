@@ -17,13 +17,12 @@ async function getFacultyData() {
         return JSON.parse(data);
     } catch (error) {
         if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-            // If the file doesn't exist, create it with default content
             const defaultData = {
                 authorized_faculty: [
-                    { name: "Ramesh", faculty_id: "MRUE2109T029" },
-                    { name: "Sravani", faculty_id: "MRUE2109T045" },
-                    { name: "Naveen", faculty_id: "MRUE2109T052" },
-                    { name: "Divya", faculty_id: "MRUE2109T061" }
+                    { "name": "Ramesh", "faculty_id": "MRUE2109T029" },
+                    { "name": "Sravani", "faculty_id": "MRUE2109T045" },
+                    { "name": "Naveen", "faculty_id": "MRUE2109T052" },
+                    { "name": "Divya", "faculty_id": "MRUE2109T061" }
                 ],
                 secure_key: "FACULTY@2025#ACCESS"
             };
@@ -40,12 +39,13 @@ async function getFacultyData() {
 export async function validateFaculty(input: ValidateFacultyInput): Promise<ValidateFacultyOutput> {
     const authData = await getFacultyData();
 
-    if (input.secureKey !== authData.secure_key) {
+    if (input.secureKey && (input.secureKey !== authData.secure_key)) {
         return { isAuthorized: false, error: "Secure key mismatch." };
     }
 
     const facultyMember = authData.authorized_faculty.find(
-        (faculty: { faculty_id: string }) => faculty.faculty_id === input.facultyId
+        (faculty: { faculty_id: string }) => 
+          faculty.faculty_id.toLowerCase() === input.facultyId.toLowerCase()
     );
 
     if (!facultyMember) {

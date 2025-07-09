@@ -29,7 +29,6 @@ import {
   FileUp,
   Loader2,
   Table,
-  Home,
   Trash2,
   Calendar as CalendarIcon,
   Clock,
@@ -189,6 +188,14 @@ export default function AdminDashboard() {
     });
   };
 
+  if (isPending && !seatingData) {
+    return (
+        <div className="flex items-center justify-center p-8">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    )
+  }
+
   if (seatingData) {
     if (!seatingData.examConfig) {
       return (
@@ -208,7 +215,7 @@ export default function AdminDashboard() {
     }
     const { startDate, endDate, startTime, endTime } = seatingData.examConfig;
     return (
-        <Card className="w-full shadow-lg">
+        <Card className="w-full max-w-7xl shadow-lg">
             <CardHeader>
                 <CardTitle className="flex justify-between items-center">
                     <span>Generated Seating Plan</span>
