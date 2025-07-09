@@ -26,7 +26,7 @@ const seatingArrangementFlow = ai.defineFlow(
     // Step 1: Parse the Student List Document
     const { output: studentListOutput } = await ai.generate({
       prompt: `Extract the list of students from the provided document.`,
-      context: [{ document: input.studentListDoc }],
+      context: [{ document: { data: input.studentListDoc, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" } }],
       output: {
         schema: z.object({
           students: z.array(StudentSchema),
@@ -44,7 +44,7 @@ const seatingArrangementFlow = ai.defineFlow(
     // Step 2: Parse the Seating Layout Document
     const { output: seatingLayoutOutput } = await ai.generate({
         prompt: `Extract the seating capacity details from this document.`,
-        context: [{document: input.seatingLayoutDoc}],
+        context: [{ document: { data: input.seatingLayoutDoc, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" } }],
         output: {
             schema: SeatingLayoutSchema,
         },
