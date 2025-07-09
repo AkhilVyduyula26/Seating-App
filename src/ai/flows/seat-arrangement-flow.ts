@@ -7,7 +7,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, StudentSchema, SeatingLayoutSchema, SeatingAssignmentSchema } from '@/lib/types';
+import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, StudentSchema, SeatingLayoutSchema, SeatingAssignmentSchema, ExamConfig } from '@/lib/types';
 
 
 export async function generateSeatingArrangement(
@@ -15,6 +15,15 @@ export async function generateSeatingArrangement(
 ): Promise<GenerateSeatingArrangementOutput> {
   return seatingArrangementFlow(input);
 }
+
+
+// Internal type for the flow, combining student list, layout, and exam config
+const SeatingPlanGenerationInfoSchema = z.object({
+  students: z.array(StudentSchema),
+  layout: SeatingLayoutSchema,
+  examConfig: z.custom<ExamConfig>() // Using z.custom as z.date() doesn't pass through flows well
+});
+
 
 const seatingArrangementFlow = ai.defineFlow(
   {
@@ -25,8 +34,8 @@ const seatingArrangementFlow = ai.defineFlow(
   async (input) => {
     // Step 1: Parse the Student List Document
     const { output: studentListOutput } = await ai.generate({
-      prompt: `Extract the list of students from the provided Excel document.
-      The document contains the following columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber'.
+      prompt: `Extract the list of students from the provided document.
+      The document has these columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber'.
       Return the data as a JSON object with a 'students' array.`,
       context: [{ document: { data: input.studentListDoc, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" } }],
       output: {
@@ -38,15 +47,14 @@ const seatingArrangementFlow = ai.defineFlow(
     });
     
     if (!studentListOutput?.students || studentListOutput.students.length === 0) {
-        return { error: "Could not extract any student data from the student list file. Please ensure the file is correctly formatted with columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber' and is not empty." };
+        return { error: "Could not extract any student data. Please ensure the student list file is correctly formatted with columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber' and is not empty." };
     }
     const students = studentListOutput.students;
 
-
     // Step 2: Parse the Seating Layout Document
     const { output: seatingLayoutOutput } = await ai.generate({
-        prompt: `Extract the seating capacity details from this Excel document.
-        The document contains columns for: 'blocks', 'floorsPerBlock', 'roomsPerFloor', 'benchesPerRoom'.
+        prompt: `Extract the seating capacity details from this document.
+        The document has these columns: 'blocks', 'floorsPerBlock', 'roomsPerFloor', 'benchesPerRoom'.
         There will be only one row of data. Return it as a JSON object.`,
         context: [{ document: { data: input.seatingLayoutDoc, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" } }],
         output: {
@@ -56,7 +64,7 @@ const seatingArrangementFlow = ai.defineFlow(
     });
 
     if (!seatingLayoutOutput) {
-        return { error: "Could not extract seating layout data from the layout file. Please ensure the file is correctly formatted with columns: 'blocks', 'floorsPerBlock', 'roomsPerFloor', 'benchesPerRoom' and is not empty." };
+        return { error: "Could not extract seating layout data. Please ensure the layout file is correctly formatted with columns: 'blocks', 'floorsPerBlock', 'roomsPerFloor', 'benchesPerRoom' and is not empty." };
     }
     const layout = seatingLayoutOutput;
     const totalCapacity = layout.blocks * layout.floorsPerBlock * layout.roomsPerFloor * layout.benchesPerRoom;
@@ -64,7 +72,7 @@ const seatingArrangementFlow = ai.defineFlow(
         return { error: `Not enough seats for all students. Required: ${students.length}, Available: ${totalCapacity}` };
     }
 
-    // Step 3: Generate the seating arrangement
+    // Step 3: Generate the seating arrangement by calling another prompt/flow
     const { output: arrangementOutput } = await ai.generate({
       prompt: `You are a seating arrangement coordinator for an exam. Your task is to assign seats to students based on a list and a set of rules.
 
