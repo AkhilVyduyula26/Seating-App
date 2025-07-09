@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Validates a faculty member's credentials against a structured data file.
@@ -51,6 +52,14 @@ export async function validateFaculty(input: ValidateFacultyInput): Promise<Vali
     if (!facultyMember) {
         return { isAuthorized: false, error: "Faculty ID not found." };
     }
+
+    // If secure key is provided, it must match. If not provided, we only check for faculty ID.
+    if(input.secureKey) {
+        if (input.secureKey !== authData.secure_key) {
+             return { isAuthorized: false, error: "Secure key mismatch." };
+        }
+    }
+
 
     return { isAuthorized: true };
 }

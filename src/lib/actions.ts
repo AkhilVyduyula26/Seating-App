@@ -1,3 +1,4 @@
+
 "use server";
 
 import fs from "fs/promises";
@@ -71,7 +72,7 @@ export async function getSeatingDataAction(): Promise<{
     return { plan: parsedData.plan, examConfig: parsedData.examConfig };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return {};
+      return { error: "No seating plan has been generated yet."};
     }
     console.error("Error fetching seating data:", error);
     return { error: "Failed to load seating data." };
@@ -91,7 +92,7 @@ export async function deleteSeatingDataAction() {
     }
 }
 
-export async function validateFacultyAction(facultyId: string, secureKey: string): Promise<{
+export async function validateFacultyAction(facultyId: string, secureKey?: string): Promise<{
     isValid: boolean;
     error?: string;
 }> {

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
@@ -42,7 +43,7 @@ export default function StudentDashboard({ hallTicketNumber, onBackToHome }: { h
         return;
       }
       const student = data.plan.find(
-        (s: SeatingAssignment) => s.hallTicketNumber === hallTicketNumber
+        (s: SeatingAssignment) => s.hallTicketNumber.toLowerCase() === hallTicketNumber.toLowerCase()
       );
       if (student) {
         setStudentData(student);
@@ -66,7 +67,7 @@ export default function StudentDashboard({ hallTicketNumber, onBackToHome }: { h
 
   if (isPending) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-full">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
@@ -74,14 +75,11 @@ export default function StudentDashboard({ hallTicketNumber, onBackToHome }: { h
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-full">
          <Card className="w-full max-w-md shadow-lg">
              <CardHeader>
                 <CardTitle className="flex justify-between items-center">
                     <span>Student Login</span>
-                     <Button variant="ghost" size="icon" onClick={onBackToHome}>
-                        <Home />
-                    </Button>
                 </CardTitle>
              </CardHeader>
              <CardContent>
@@ -91,13 +89,22 @@ export default function StudentDashboard({ hallTicketNumber, onBackToHome }: { h
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
             </CardContent>
+            <CardFooter>
+                 <Button variant="outline" onClick={onBackToHome}>
+                    Back to Login
+                </Button>
+            </CardFooter>
          </Card>
       </div>
     );
   }
 
   if (!studentData || !examConfig) {
-    return null; // Should be handled by error state
+    return (
+         <div className="flex items-center justify-center h-full">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    );
   }
   
   const examDates = getExamDates(examConfig.startDate, examConfig.endDate);
@@ -111,9 +118,6 @@ export default function StudentDashboard({ hallTicketNumber, onBackToHome }: { h
                          <User />
                         Your Exam Seating Details
                     </div>
-                    <Button variant="ghost" size="icon" onClick={onBackToHome}>
-                        <Home />
-                    </Button>
                 </CardTitle>
                 <CardDescription>
                     Hello, {studentData.name}! Here is your assigned seat for the upcoming exams.
