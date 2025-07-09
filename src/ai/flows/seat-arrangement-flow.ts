@@ -32,11 +32,11 @@ const seatingArrangementFlow = ai.defineFlow(
           students: z.array(StudentSchema),
         }),
       },
-      model: 'googleai/gemini-2.0-flash'
+      model: 'googleai/gemini-1.5-flash-latest'
     });
     
     if (!studentListOutput?.students || studentListOutput.students.length === 0) {
-        return { error: "Could not extract any student data from the provided student list file." };
+        return { error: "Could not extract any student data from the provided student list file. Please ensure the file is correctly formatted and not empty." };
     }
     const students = studentListOutput.students;
 
@@ -48,11 +48,11 @@ const seatingArrangementFlow = ai.defineFlow(
         output: {
             schema: SeatingLayoutSchema,
         },
-        model: 'googleai/gemini-2.0-flash'
+        model: 'googleai/gemini-1.5-flash-latest'
     });
 
     if (!seatingLayoutOutput) {
-        return { error: "Could not extract seating layout data from the provided layout file." };
+        return { error: "Could not extract seating layout data from the provided layout file. Please ensure the file is correctly formatted and not empty." };
     }
     const layout = seatingLayoutOutput;
     const totalCapacity = layout.blocks * layout.floorsPerBlock * layout.roomsPerFloor * layout.benchesPerRoom;
@@ -86,7 +86,7 @@ Generate the full seating plan based on these rules and return it as a JSON arra
           seatingPlan: z.array(SeatingAssignmentSchema),
         }),
       },
-       model: 'googleai/gemini-2.0-flash'
+       model: 'googleai/gemini-1.5-flash-latest'
     });
 
     if (!arrangementOutput?.seatingPlan) {
