@@ -99,7 +99,7 @@ export default function StudentDashboard({ hallTicketNumber, onBackToHome }: { h
     );
   }
 
-  if (!studentData || !examConfig) {
+  if (!studentData) {
     return (
          <div className="flex items-center justify-center h-full">
             <Loader2 className="h-8 w-8 animate-spin" />
@@ -107,7 +107,7 @@ export default function StudentDashboard({ hallTicketNumber, onBackToHome }: { h
     );
   }
   
-  const examDates = getExamDates(examConfig.startDate, examConfig.endDate);
+  const examDates = examConfig ? getExamDates(examConfig.startDate, examConfig.endDate) : [];
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
@@ -155,19 +155,23 @@ export default function StudentDashboard({ hallTicketNumber, onBackToHome }: { h
                     </div>
                 </div>
 
-                <div className="space-y-2">
-                    <h4 className="font-semibold">Exam Schedule:</h4>
-                    <div className="flex flex-wrap gap-2">
-                        {examDates.map(date => (
-                            <Badge key={date.toISOString()} variant="secondary">{format(date, 'EEE, MMM d')}</Badge>
-                        ))}
-                    </div>
-                    <p className="text-xs text-muted-foreground">Your seat remains the same for all dates listed above.</p>
-                </div>
-                 <div className="space-y-2">
-                     <h4 className="font-semibold">Exam Timings:</h4>
-                     <p className="text-sm">Daily from <strong>{examConfig.startTime.hour}:{examConfig.startTime.minute}</strong> to <strong>{examConfig.endTime.hour}:{examConfig.endTime.minute}</strong></p>
-                 </div>
+                {examConfig && (
+                    <>
+                        <div className="space-y-2">
+                            <h4 className="font-semibold">Exam Schedule:</h4>
+                            <div className="flex flex-wrap gap-2">
+                                {examDates.map(date => (
+                                    <Badge key={date.toISOString()} variant="secondary">{format(date, 'EEE, MMM d')}</Badge>
+                                ))}
+                            </div>
+                            <p className="text-xs text-muted-foreground">Your seat remains the same for all dates listed above.</p>
+                        </div>
+                        <div className="space-y-2">
+                            <h4 className="font-semibold">Exam Timings:</h4>
+                            <p className="text-sm">Daily from <strong>{examConfig.startTime.hour}:{examConfig.startTime.minute}</strong> to <strong>{examConfig.endTime.hour}:{examConfig.endTime.minute}</strong></p>
+                        </div>
+                    </>
+                )}
             </CardContent>
             <CardFooter>
                 <Button className="w-full" onClick={handleAlertClick}>
