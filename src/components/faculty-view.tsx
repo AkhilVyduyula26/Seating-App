@@ -25,7 +25,6 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { validateFacultyAction } from '@/lib/actions';
 import {
-  FileUp,
   KeyRound,
   UserCheck,
   Loader2,
@@ -35,18 +34,8 @@ import {
 } from 'lucide-react';
 import { Textarea } from './ui/textarea';
 
-const fileToDataUri = (file: File) =>
-  new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (event) => resolve(event.target?.result as string);
-    reader.onerror = (error) => reject(error);
-    reader.readAsDataURL(file);
-  });
 
 const FacultyAuthSchema = z.object({
-  facultyPdf: z
-    .any()
-    .refine((files) => files?.length === 1, 'Faculty PDF is required.'),
   facultyId: z.string().min(1, 'Faculty ID is required.'),
   secureKey: z.string().min(1, 'Secure key is required.'),
 });
@@ -69,11 +58,8 @@ export default function FacultyView() {
   const onSubmit: SubmitHandler<FacultyAuthType> = (data) => {
     startTransition(async () => {
       setIsAuthorized(false);
-      const facultyFile = data.facultyPdf[0] as File;
-      const facultyPdfDataUri = await fileToDataUri(facultyFile);
-
+      
       const result = await validateFacultyAction(
-        facultyPdfDataUri,
         data.facultyId,
         data.secureKey
       );
@@ -104,33 +90,12 @@ export default function FacultyView() {
           Faculty Document Access
         </CardTitle>
         <CardDescription>
-          Upload the faculty authorization PDF and enter your credentials to
-          unlock editing capabilities. The document cannot be deleted.
+          Enter your credentials to unlock editing capabilities. The document cannot be deleted.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="facultyPdf"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2">
-                    <FileUp /> Faculty Authorization PDF
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      type="file"
-                      accept="application/pdf"
-                      onChange={(e) => field.onChange(e.target.files)}
-                      disabled={isPending || isAuthorized}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -193,7 +158,7 @@ export default function FacultyView() {
           <div className="mt-8 flex flex-col items-center justify-center gap-4 text-muted-foreground">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="font-medium">
-              AI is validating your credentials...
+              Validating your credentials...
             </p>
             <p className="text-sm">Please wait a moment.</p>
           </div>
@@ -242,7 +207,6 @@ export default function FacultyView() {
             onClick={() => {
               setIsAuthorized(false);
               form.reset({
-                facultyPdf: null,
                 facultyId: '',
                 secureKey: '',
               });

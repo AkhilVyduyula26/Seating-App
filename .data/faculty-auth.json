@@ -1,0 +1,9 @@
+{
+  "authorized_faculty": [
+    { "name": "Ramesh", "faculty_id": "MRUE2109T029" },
+    { "name": "Sravani", "faculty_id": "MRUE2109T045" },
+    { "name": "Naveen", "faculty_id": "MRUE2109T052" },
+    { "name": "Divya", "faculty_id": "MRUE2109T061" }
+  ],
+  "secure_key": "FACULTY@2025#ACCESS"
+}

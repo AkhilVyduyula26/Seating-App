@@ -62,9 +62,6 @@ export type GenerateSeatingArrangementOutput = z.infer<typeof GenerateSeatingArr
 
 
 export const ValidateFacultyInputSchema = z.object({
-  facultyPdfDataUri: z.string().describe(
-      "A PDF file of authorized faculty, as a data URI that must include a MIME type and use Base64 encoding. The PDF contains a secure key at the top and a list of faculty members with their IDs."
-    ),
   facultyId: z.string().describe("The Faculty ID entered by the user."),
   secureKey: z.string().describe("The secure key entered by the user."),
 });

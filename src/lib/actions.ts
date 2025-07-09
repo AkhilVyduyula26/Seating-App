@@ -9,6 +9,7 @@ import { validateFaculty } from "@/ai/flows/validate-faculty-flow";
 import type { GenerateSeatingArrangementInput, ValidateFacultyInput, ExamConfig } from '@/lib/types';
 
 const seatingPlanPath = path.resolve(process.cwd(), ".data/seating-plan.json");
+const facultyAuthPath = path.resolve(process.cwd(), ".data/faculty-auth.json");
 
 export async function createSeatingPlanAction(
   studentListDataUri: string,
@@ -91,13 +92,11 @@ export async function deleteSeatingDataAction() {
 }
 
 export async function validateFacultyAction(
-  facultyPdfDataUri: string,
   facultyId: string,
   secureKey: string
 ) {
   try {
     const input: ValidateFacultyInput = {
-      facultyPdfDataUri,
       facultyId,
       secureKey,
     };
