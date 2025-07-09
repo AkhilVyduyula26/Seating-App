@@ -112,7 +112,7 @@ export default function Home() {
                      <CardContent className="space-y-4">
                          <CardDescription className="text-center">
                             Please enter your Hall Ticket Number to view your seat.
-                        </CardDescription>
+                        </Description>
                         <Input 
                             placeholder="Enter Hall Ticket Number"
                             value={hallTicketNumber}
@@ -136,7 +136,7 @@ export default function Home() {
                 </TabsContent>
             </Tabs>
         </Card>
-    )
+    );
   };
 
   return (
@@ -145,7 +145,7 @@ export default function Home() {
         <div className="flex items-center gap-2 justify-center">
           <Bot className="h-8 w-8 text-primary" />
           <h1 className="text-4xl font-bold tracking-tight text-foreground font-headline">
-            SeatAssign<span className="text-primary">AI</span>
+            Smart<span className="text-primary">Seat</span>
           </h1>
         </div>
         <p className="text-muted-foreground mt-2">
