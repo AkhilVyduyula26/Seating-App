@@ -107,7 +107,7 @@ export default function StudentDashboard({ hallTicketNumber, onBackToHome }: { h
     );
   }
   
-  const examDates = examConfig ? getExamDates(examConfig.startDate, examConfig.endDate) : [];
+  const examDates = examConfig ? getExamDates(new Date(examConfig.startDate), new Date(examConfig.endDate)) : [];
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">

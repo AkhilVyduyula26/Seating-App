@@ -31,8 +31,8 @@ export const SeatingAssignmentSchema = z.object({
 export type SeatingAssignment = z.infer<typeof SeatingAssignmentSchema>;
 
 const ExamConfigSchema = z.object({
-    startDate: z.date(),
-    endDate: z.date(),
+    startDate: z.string().describe("The start date of the exam period in ISO format."),
+    endDate: z.string().describe("The end date of the exam period in ISO format."),
     startTime: z.object({ hour: z.string(), minute: z.string() }),
     endTime: z.object({ hour: z.string(), minute: z.string() }),
     useSamePlan: z.boolean(),

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
@@ -123,8 +124,8 @@ export default function AdminDashboard() {
       ]);
         
       const examConfig: ExamConfig = {
-        startDate: data.startDate,
-        endDate: data.endDate,
+        startDate: data.startDate.toISOString(),
+        endDate: data.endDate.toISOString(),
         startTime: {
             hour: data.startTime.split(':')[0],
             minute: data.startTime.split(':')[1],
@@ -221,7 +222,7 @@ export default function AdminDashboard() {
                     <span>Generated Seating Plan</span>
                 </CardTitle>
                 <CardDescription>
-                    The seating plan has been successfully generated for exams from {format(startDate, 'PPP')} to {format(endDate, 'PPP')} between {startTime.hour}:{startTime.minute} and {endTime.hour}:{endTime.minute}.
+                    The seating plan has been successfully generated for exams from {format(new Date(startDate), 'PPP')} to {format(new Date(endDate), 'PPP')} between {startTime.hour}:{startTime.minute} and {endTime.hour}:{endTime.minute}.
                 </CardDescription>
             </CardHeader>
             <CardContent>
