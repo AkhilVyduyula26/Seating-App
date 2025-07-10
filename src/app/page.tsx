@@ -112,7 +112,7 @@ export default function Home() {
                      <CardContent className="space-y-4">
                          <CardDescription className="text-center">
                             Please enter your Hall Ticket Number to view your seat.
-                        </Description>
+                        </CardDescription>
                         <Input 
                             placeholder="Enter Hall Ticket Number"
                             value={hallTicketNumber}
