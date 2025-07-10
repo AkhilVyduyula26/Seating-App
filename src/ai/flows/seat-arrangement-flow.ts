@@ -31,7 +31,8 @@ const seatingArrangementFlow = ai.defineFlow(
 CRITICAL INSTRUCTIONS:
 1.  All values for 'blocks', 'floorsPerBlock', 'roomsPerFloor', and 'benchesPerRoom' MUST be NUMBERS. Do NOT return them as strings.
 2.  There is only one row of data. Extract it.
-3.  Do not add any commentary or extra text. Your output must ONLY be the JSON object.
+3.  If any of these values are not a valid number (e.g., blank, text), you must return an error.
+4.  Do not add any commentary or extra text. Your output must ONLY be the JSON object.
 
 EXAMPLE: If the file has 2 blocks, 3 floors, 10 rooms, and 20 benches, the output MUST be exactly:
 {
@@ -59,7 +60,7 @@ Now, extract the data from the provided document. The document has these columns
     const benchesPerRoom = Number(seatingLayoutOutput.benchesPerRoom);
     
     if (isNaN(blocks) || isNaN(floorsPerBlock) || isNaN(roomsPerFloor) || isNaN(benchesPerRoom)) {
-      return { error: "One or more values in the seating layout file are not valid numbers. The AI model failed to extract them correctly. Please check the file and try again." };
+      return { error: "One or more values in the seating layout file are not valid numbers. Please check the file for blank or non-numeric values and try again." };
     }
 
     const layout = { blocks, floorsPerBlock, roomsPerFloor, benchesPerRoom };
