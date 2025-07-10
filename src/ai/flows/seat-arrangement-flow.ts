@@ -8,7 +8,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, StudentSchema, SeatingLayoutSchema, SeatingAssignmentSchema, ExamConfig } from '@/lib/types';
+import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, StudentSchema, DynamicLayoutInput, SeatingAssignmentSchema, ExamConfig } from '@/lib/types';
 
 
 export async function generateSeatingArrangement(
@@ -24,52 +24,39 @@ const seatingArrangementFlow = ai.defineFlow(
     outputSchema: GenerateSeatingArrangementOutputSchema,
   },
   async (input) => {
-    // Step 1: Parse the Seating Layout Document with a very strict prompt
-    const { output: seatingLayoutOutput } = await ai.generate({
-        prompt: `You are a data extraction specialist. Your only task is to extract data from an Excel file and return it as a valid JSON object.
+    
+    // Step 1: Generate layout from manual input
+    const layout = input.seatingLayout;
+    let totalCapacity = 0;
+    const allSeats: {block: string; floor: string; roomNo: string; benchNo: number}[] = [];
 
-CRITICAL INSTRUCTIONS:
-1.  All values for 'blocks', 'floorsPerBlock', 'roomsPerFloor', and 'benchesPerRoom' MUST be NUMBERS. Do NOT return them as strings.
-2.  There is only one row of data. Extract it.
-3.  If any of these values are not a valid number (e.g., blank, text), you must return an error.
-4.  Do not add any commentary or extra text. Your output must ONLY be the JSON object.
-
-EXAMPLE: If the file has 2 blocks, 3 floors, 10 rooms, and 20 benches, the output MUST be exactly:
-{
-  "blocks": 2,
-  "floorsPerBlock": 3,
-  "roomsPerFloor": 10,
-  "benchesPerRoom": 20
-}
-
-Now, extract the data from the provided document. The document has these columns: 'blocks', 'floorsPerBlock', 'roomsPerFloor', 'benchesPerRoom'.`,
-        context: [{ document: { data: input.seatingLayoutDoc, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" } }],
-        output: {
-            schema: SeatingLayoutSchema,
-        },
-        model: 'googleai/gemini-1.5-flash-latest'
+    layout.blocks.forEach(block => {
+        block.floors.forEach(floor => {
+            const roomNumbers = floor.rooms.split(',').map(r => r.trim()).filter(r => r);
+            const benches = parseInt(floor.benchesPerRoom, 10);
+            if (isNaN(benches)) {
+                throw new Error(`Invalid number of benches for block ${block.name}, floor ${floor.name}`);
+            }
+            totalCapacity += roomNumbers.length * benches;
+            
+            roomNumbers.forEach(roomNo => {
+                for (let i = 1; i <= benches; i++) {
+                    allSeats.push({
+                        block: block.name,
+                        floor: floor.name,
+                        roomNo: roomNo,
+                        benchNo: i
+                    });
+                }
+            });
+        });
     });
 
-    if (!seatingLayoutOutput) {
-        return { error: "Could not extract seating layout data. Please ensure the layout file is correctly formatted with columns: 'blocks', 'floorsPerBlock', 'roomsPerFloor', 'benchesPerRoom' and is not empty." };
-    }
-    
-    const blocks = Number(seatingLayoutOutput.blocks);
-    const floorsPerBlock = Number(seatingLayoutOutput.floorsPerBlock);
-    const roomsPerFloor = Number(seatingLayoutOutput.roomsPerFloor);
-    const benchesPerRoom = Number(seatingLayoutOutput.benchesPerRoom);
-    
-    if (isNaN(blocks) || isNaN(floorsPerBlock) || isNaN(roomsPerFloor) || isNaN(benchesPerRoom)) {
-      return { error: "One or more values in the seating layout file are not valid numbers. Please check the file for blank or non-numeric values and try again." };
-    }
 
-    const layout = { blocks, floorsPerBlock, roomsPerFloor, benchesPerRoom };
-    const totalCapacity = layout.blocks * layout.floorsPerBlock * layout.roomsPerFloor * layout.benchesPerRoom;
-
-    // Step 2: Parse the Student List Document
+    // Step 2: Parse the Student List PDF Document
     const { output: studentListOutput } = await ai.generate({
       prompt: `Extract the list of students from the provided document. The document has these columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber'. Return the data as a JSON object with a 'students' array.`,
-      context: [{ document: { data: input.studentListDoc, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" } }],
+      context: [{ document: { data: input.studentListDoc, contentType: "application/pdf" } }],
       output: {
         schema: z.object({
           students: z.array(StudentSchema),
@@ -79,7 +66,7 @@ Now, extract the data from the provided document. The document has these columns
     });
     
     if (!studentListOutput?.students || studentListOutput.students.length === 0) {
-        return { error: "Could not extract any student data. Please ensure the student list file is correctly formatted with columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber' and is not empty." };
+        return { error: "Could not extract any student data. Please ensure the student list PDF is correctly formatted with columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber' and is not empty." };
     }
     const students = studentListOutput.students;
 
@@ -90,26 +77,28 @@ Now, extract the data from the provided document. The document has these columns
 
     // Step 4: Generate the seating arrangement by calling another prompt/flow
     const { output: arrangementOutput } = await ai.generate({
-      prompt: `You are a seating arrangement coordinator for an exam. Your task is to assign seats to students based on a list and a set of rules. You MUST follow these rules exactly.
+      prompt: `You are a seating arrangement coordinator for an exam. Your task is to assign every student to a unique seat from the available list. You MUST follow these rules exactly.
 
 RULES:
-1.  Assign a unique seat to every student from the provided list. Do not invent students.
-2.  **CRUCIAL ANTI-CHEATING RULE**: To prevent cheating, no two students from the same branch (e.g., two 'CSE' students) should be seated directly next to each other on consecutive benches in the same room. You must alternate branches.
-3.  **RANDOMIZATION**: Randomize the student list before assigning seats to ensure the final arrangement is not predictable.
-4.  Fill seats sequentially after randomization: Fill all benches in a room, then all rooms on a floor, then all floors in a block, before moving to the next block. (Block -> Floor -> Room -> Bench).
+1.  **RANDOMIZE**: You MUST shuffle the student list randomly before making any assignments. This is critical for fairness.
+2.  **UNIQUE ASSIGNMENT**: Assign each student to one and only one bench from the 'AVAILABLE_SEATS' list.
+3.  **ANTI-CHEATING**: As much as possible, try to avoid seating two students from the same 'branch' in the same 'roomNo'. It is okay if it's not perfect, but you must attempt to separate them.
+4.  **COMPLETE LIST**: The final 'seatingPlan' must include every single student from the 'STUDENT_LIST'. Do not miss anyone.
 
-AVAILABLE SEATING LAYOUT:
-- Total Blocks: ${layout.blocks} (Named SOE1, SOE2, etc.)
-- Floors per Block: ${layout.floorsPerBlock} (Numbered 1, 2, 3...)
-- Classrooms per Floor: ${layout.roomsPerFloor} (Numbered starting from 101, 102... for floor 1; 201, 202... for floor 2, etc.)
-- Benches per Classroom: ${layout.benchesPerRoom} (Numbered 1, 2, 3...)
+AVAILABLE_SEATS (List of all possible benches):
+\`\`\`json
+${JSON.stringify(allSeats, null, 2)}
+\`\`\`
 
-STUDENT LIST TO BE SEATED (randomize before assigning):
+STUDENT_LIST (Randomize this list before assigning):
 \`\`\`json
 ${JSON.stringify(students, null, 2)}
 \`\`\`
 
-Based on the rules, layout, and student list above, generate the complete seating plan. The output must be a JSON object with a 'seatingPlan' array containing an entry for every single student.`,
+Based on the rules, seats, and student list, generate the complete seating plan. The output must be a JSON object with a 'seatingPlan' array containing an entry for every student, combining their details with their assigned seat.
+Example entry in the final plan: { "name": "John Doe", "hallTicketNumber": "H123", "branch": "CSE", "contactNumber": "9876543210", "block": "SOE2", "floor": "1st", "classroom": "201", "benchNumber": 1 }
+Note that 'classroom' in the output schema corresponds to 'roomNo' from the available seats.
+`,
       output: {
         schema: z.object({
           seatingPlan: z.array(SeatingAssignmentSchema),
@@ -121,7 +110,18 @@ Based on the rules, layout, and student list above, generate the complete seatin
     if (!arrangementOutput?.seatingPlan) {
         return { error: "Failed to generate the seating arrangement. The AI model could not create a valid plan." };
     }
+
+    // Dummy examConfig since it's not provided in the new flow
+    const examConfig: ExamConfig = {
+        startDate: new Date().toISOString(),
+        endDate: new Date().toISOString(),
+        startTime: { hour: "00", minute: "00" },
+        endTime: { hour: "00", minute: "00" },
+        useSamePlan: true,
+    };
     
-    return { seatingPlan: arrangementOutput.seatingPlan };
+    return { seatingPlan: arrangementOutput.seatingPlan, examConfig: examConfig };
   }
 );
+
+    

@@ -1,3 +1,4 @@
+
 import { z } from 'zod';
 
 export const StudentSchema = z.object({
@@ -7,6 +8,23 @@ export const StudentSchema = z.object({
   contactNumber: z.string().describe('The student\'s contact phone number.'),
 });
 export type Student = z.infer<typeof StudentSchema>;
+
+// Schema for manual layout input from the admin form
+export const DynamicFloorSchema = z.object({
+    name: z.string().min(1, "Floor name is required."),
+    rooms: z.string().min(1, "Room numbers are required."),
+    benchesPerRoom: z.string().min(1, "Benches per room is required."),
+});
+
+export const DynamicBlockSchema = z.object({
+    name: z.string().min(1, "Block name is required."),
+    floors: z.array(DynamicFloorSchema).min(1, "At least one floor is required."),
+});
+
+export const DynamicLayoutInputSchema = z.object({
+    blocks: z.array(DynamicBlockSchema).min(1, "At least one block is required."),
+});
+export type DynamicLayoutInput = z.infer<typeof DynamicLayoutInputSchema>;
 
 
 export const SeatingLayoutSchema = z.object({
@@ -30,7 +48,7 @@ export const SeatingAssignmentSchema = z.object({
 });
 export type SeatingAssignment = z.infer<typeof SeatingAssignmentSchema>;
 
-const ExamConfigSchema = z.object({
+export const ExamConfigSchema = z.object({
     startDate: z.string().describe("The start date of the exam period in ISO format."),
     endDate: z.string().describe("The end date of the exam period in ISO format."),
     startTime: z.object({ hour: z.string(), minute: z.string() }),
@@ -43,19 +61,15 @@ export const GenerateSeatingArrangementInputSchema = z.object({
   studentListDoc: z
     .string()
     .describe(
-      "An Excel file containing the list of students, as a data URI."
+      "A PDF file containing the list of students, as a data URI."
     ),
-  seatingLayoutDoc: z
-    .string()
-    .describe(
-      "An Excel file containing the seating capacity and layout details, as a data URI."
-    ),
-   examConfig: ExamConfigSchema,
+  seatingLayout: DynamicLayoutInputSchema,
 });
 export type GenerateSeatingArrangementInput = z.infer<typeof GenerateSeatingArrangementInputSchema>;
 
 export const GenerateSeatingArrangementOutputSchema = z.object({
   seatingPlan: z.array(SeatingAssignmentSchema).optional().describe("The final generated seating arrangement for all students."),
+  examConfig: ExamConfigSchema.optional().describe("The exam configuration."),
   error: z.string().optional().describe("An error message if the process fails."),
 });
 export type GenerateSeatingArrangementOutput = z.infer<typeof GenerateSeatingArrangementOutputSchema>;
@@ -73,3 +87,5 @@ export const ValidateFacultyOutputSchema = z.object({
   error: z.string().optional().describe("An error message if validation fails for a specific reason, e.g., 'Secure key mismatch' or 'Faculty ID not found'."),
 });
 export type ValidateFacultyOutput = z.infer<typeof ValidateFacultyOutputSchema>;
+
+    

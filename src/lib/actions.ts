@@ -7,34 +7,26 @@ import {
   generateSeatingArrangement,
 } from "@/ai/flows/seat-arrangement-flow";
 import { validateFaculty } from "@/ai/flows/validate-faculty-flow";
-import type { GenerateSeatingArrangementInput, ValidateFacultyInput, ExamConfig } from '@/lib/types';
+import type { GenerateSeatingArrangementInput, ValidateFacultyInput, ExamConfig, DynamicLayoutInput } from '@/lib/types';
 
 const seatingPlanPath = path.resolve(process.cwd(), ".data/seating-plan.json");
 const facultyAuthPath = path.resolve(process.cwd(), ".data/faculty-auth.json");
 
 export async function createSeatingPlanAction(
-  studentListDocDataUri: string,
-  seatingLayoutDocDataUri: string,
-  examConfig: ExamConfig
+  seatingLayout: DynamicLayoutInput,
+  studentListDocDataUri: string
 ) {
   try {
     if (
       !studentListDocDataUri ||
-      !studentListDocDataUri.startsWith("data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,")
+      !studentListDocDataUri.startsWith("data:application/pdf;base64,")
     ) {
-      return { error: "Invalid student list Excel file." };
-    }
-    if (
-      !seatingLayoutDocDataUri ||
-      !seatingLayoutDocDataUri.startsWith("data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,")
-    ) {
-      return { error: "Invalid seating layout Excel file." };
+      return { error: "Invalid student list PDF file." };
     }
 
     const input: GenerateSeatingArrangementInput = {
       studentListDoc: studentListDocDataUri,
-      seatingLayoutDoc: seatingLayoutDocDataUri,
-      examConfig
+      seatingLayout: seatingLayout,
     };
     
     const result = await generateSeatingArrangement(input);
@@ -44,9 +36,9 @@ export async function createSeatingPlanAction(
     }
     
     await fs.mkdir(path.dirname(seatingPlanPath), { recursive: true });
-    await fs.writeFile(seatingPlanPath, JSON.stringify({ plan: result.seatingPlan, examConfig }, null, 2));
+    await fs.writeFile(seatingPlanPath, JSON.stringify({ plan: result.seatingPlan, examConfig: result.examConfig }, null, 2));
 
-    return { success: true };
+    return { success: true, plan: result.seatingPlan, examConfig: result.examConfig };
   } catch (e: any) {
     console.error("Error creating seating plan:", e);
      if (e.message?.includes("API key not valid")) {
@@ -135,3 +127,5 @@ export async function updateFacultyAuthDataAction(content: string): Promise<{ su
         return { success: false, error: "Failed to save faculty authorization data." };
     }
 }
+
+    
