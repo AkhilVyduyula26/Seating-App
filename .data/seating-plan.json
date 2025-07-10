@@ -1,0 +1,47 @@
+{
+  "plan": [
+    {
+      "benchNumber": 1,
+      "block": "A",
+      "branch": "CSE",
+      "classroom": "101",
+      "contactNumber": "9876543210",
+      "floor": "1",
+      "hallTicketNumber": "1001",
+      "name": "John Doe"
+    },
+    {
+      "benchNumber": 2,
+      "block": "A",
+      "branch": "IT",
+      "classroom": "101",
+      "contactNumber": "9876543211",
+      "floor": "1",
+      "hallTicketNumber": "1002",
+      "name": "Jane Doe"
+    },
+    {
+      "benchNumber": 3,
+      "block": "A",
+      "branch": "IoT",
+      "classroom": "102",
+      "contactNumber": "9876543212",
+      "floor": "1",
+      "hallTicketNumber": "1003",
+      "name": "Peter Jones"
+    }
+  ],
+  "examConfig": {
+    "startDate": "2025-07-10T18:24:18.946Z",
+    "endDate": "2025-07-10T18:24:18.946Z",
+    "startTime": {
+      "hour": "09",
+      "minute": "00"
+    },
+    "endTime": {
+      "hour": "12",
+      "minute": "00"
+    },
+    "useSamePlan": true
+  }
+}

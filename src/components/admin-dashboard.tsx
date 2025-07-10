@@ -34,7 +34,7 @@ import {
   Armchair,
 } from "lucide-react";
 import { SeatingTable } from "./seating-table";
-import { ExamConfig } from "@/lib/types";
+import { ExamConfig, SeatingAssignment } from "@/lib/types";
 
 const fileToDataUri = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -56,11 +56,15 @@ type GenerationFormType = z.infer<typeof GenerationFormSchema>;
 
 export default function AdminDashboard() {
   const [isPending, startTransition] = useTransition();
-  const [seatingData, setSeatingData] = useState<{ plan: any[], examConfig: ExamConfig } | null>(null);
+  const [seatingData, setSeatingData] = useState<{ plan: SeatingAssignment[], examConfig: ExamConfig } | null>(null);
   const { toast } = useToast();
 
   const form = useForm<GenerationFormType>({
     resolver: zodResolver(GenerationFormSchema),
+    defaultValues: {
+      seatingCapacity: "",
+      studentListDoc: undefined,
+    },
   });
 
   useEffect(() => {
