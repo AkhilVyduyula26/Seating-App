@@ -53,10 +53,10 @@ const seatingArrangementFlow = ai.defineFlow(
     });
 
 
-    // Step 2: Parse the Student List CSV Document
+    // Step 2: Parse the Student List CSV/XLSX Document
     const { output: studentListOutput } = await ai.generate({
-      prompt: `Extract the list of students from the provided CSV document. The document has these columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber'. Return the data as a JSON object with a 'students' array. Ensure every single row from the CSV is parsed.`,
-      context: [{ document: { data: input.studentListDoc, contentType: "text/csv" } }],
+      prompt: `Extract the list of students from the provided document. The document has these columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber'. You must extract every single student record from the document. Do not skip any rows. Do not generate any fake data. Return the data as a JSON object with a 'students' array.`,
+      context: [{ document: { data: input.studentListDoc } }], // Genkit infers content type
       output: {
         schema: z.object({
           students: z.array(StudentSchema),
@@ -66,7 +66,7 @@ const seatingArrangementFlow = ai.defineFlow(
     });
     
     if (!studentListOutput?.students || studentListOutput.students.length === 0) {
-        return { error: "Could not extract any student data. Please ensure the student list CSV is correctly formatted with headers: 'name', 'hallTicketNumber', 'branch', 'contactNumber' and is not empty." };
+        return { error: "Could not extract any student data. Please ensure the student list file (CSV or XLSX) is correctly formatted with headers: 'name', 'hallTicketNumber', 'branch', 'contactNumber' and is not empty." };
     }
     const students = studentListOutput.students;
 
@@ -77,13 +77,14 @@ const seatingArrangementFlow = ai.defineFlow(
 
     // Step 4: Generate the seating arrangement by calling another prompt/flow
     const { output: arrangementOutput } = await ai.generate({
-      prompt: `You are a seating arrangement coordinator for an exam. Your task is to assign every student to a unique seat from the available list. You MUST follow these rules exactly.
+      prompt: `You are a seating arrangement coordinator for an exam. Your task is to assign every student from the provided list to a unique seat from the available list. You MUST follow these rules exactly.
 
 RULES:
-1.  **RANDOMIZE**: You MUST shuffle the student list randomly before making any assignments. This is critical for fairness.
-2.  **UNIQUE ASSIGNMENT**: Assign each student to one and only one bench from the 'AVAILABLE_SEATS' list.
-3.  **ANTI-CHEATING**: As much as possible, try to avoid seating two students from the same 'branch' in the same 'roomNo'. It is okay if it's not perfect, but you must attempt to separate them.
+1.  **RANDOMIZE**: You MUST shuffle the student list randomly before making any assignments. This is critical for fairness and must be done every time.
+2.  **UNIQUE ASSIGNMENT**: Assign each student to one and only one bench from the 'AVAILABLE_SEATS' list. No two students can have the same seat.
+3.  **ANTI-CHEATING (Strict)**: You MUST try your absolute best to avoid seating two students from the same 'branch' in the same 'roomNo'. This is a high-priority rule.
 4.  **COMPLETE LIST**: The final 'seatingPlan' must include every single student from the 'STUDENT_LIST'. Do not miss anyone.
+5.  **REAL DATA ONLY**: Do not generate, invent, or create any student data. Use only the students provided in the 'STUDENT_LIST'.
 
 AVAILABLE_SEATS (List of all possible benches):
 \`\`\`json
@@ -96,7 +97,7 @@ ${JSON.stringify(students, null, 2)}
 \`\`\`
 
 Based on the rules, seats, and student list, generate the complete seating plan. The output must be a JSON object with a 'seatingPlan' array containing an entry for every student, combining their details with their assigned seat.
-Example entry in the final plan: { "name": "John Doe", "hallTicketNumber": "H123", "branch": "CSE", "contactNumber": "9876543210", "block": "SOE2", "floor": "1st", "classroom": "201", "benchNumber": 1 }
+Example output entry: { "name": "John Doe", "hallTicketNumber": "H123", "branch": "CSE", "contactNumber": "9876543210", "block": "SOE2", "floor": "1st", "classroom": "201", "benchNumber": 1 }
 Note that 'classroom' in the output schema corresponds to 'roomNo' from the available seats.
 `,
       output: {
@@ -109,6 +110,10 @@ Note that 'classroom' in the output schema corresponds to 'roomNo' from the avai
 
     if (!arrangementOutput?.seatingPlan) {
         return { error: "Failed to generate the seating arrangement. The AI model could not create a valid plan." };
+    }
+    
+    if (arrangementOutput.seatingPlan.length < students.length) {
+        return { error: `The generated plan is incomplete. Expected ${students.length} students, but only got ${arrangementOutput.seatingPlan.length}. Please try again.` };
     }
 
     // Dummy examConfig since it's not provided in the new flow
@@ -123,3 +128,5 @@ Note that 'classroom' in the output schema corresponds to 'roomNo' from the avai
     return { seatingPlan: arrangementOutput.seatingPlan, examConfig: examConfig };
   }
 );
+
+    

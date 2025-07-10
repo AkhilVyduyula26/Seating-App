@@ -61,7 +61,7 @@ export const GenerateSeatingArrangementInputSchema = z.object({
   studentListDoc: z
     .string()
     .describe(
-      "A CSV file containing the list of students, as a data URI."
+      "A CSV or XLSX file containing the list of students, as a data URI."
     ),
   seatingLayout: DynamicLayoutInputSchema,
 });
@@ -87,3 +87,5 @@ export const ValidateFacultyOutputSchema = z.object({
   error: z.string().optional().describe("An error message if validation fails for a specific reason, e.g., 'Secure key mismatch' or 'Faculty ID not found'."),
 });
 export type ValidateFacultyOutput = z.infer<typeof ValidateFacultyOutputSchema>;
+
+    
