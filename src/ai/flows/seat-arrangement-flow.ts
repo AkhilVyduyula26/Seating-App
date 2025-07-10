@@ -24,7 +24,48 @@ const seatingArrangementFlow = ai.defineFlow(
     outputSchema: GenerateSeatingArrangementOutputSchema,
   },
   async (input) => {
-    // Step 1: Parse the Student List Document
+    // Step 1: Parse the Seating Layout Document with a very strict prompt
+    const { output: seatingLayoutOutput } = await ai.generate({
+        prompt: `You are a data extraction specialist. Your only task is to extract data from an Excel file and return it as a valid JSON object.
+
+CRITICAL INSTRUCTIONS:
+1.  All values for 'blocks', 'floorsPerBlock', 'roomsPerFloor', and 'benchesPerRoom' MUST be NUMBERS. Do NOT return them as strings.
+2.  There is only one row of data. Extract it.
+3.  Do not add any commentary or extra text. Your output must ONLY be the JSON object.
+
+EXAMPLE: If the file has 2 blocks, 3 floors, 10 rooms, and 20 benches, the output MUST be exactly:
+{
+  "blocks": 2,
+  "floorsPerBlock": 3,
+  "roomsPerFloor": 10,
+  "benchesPerRoom": 20
+}
+
+Now, extract the data from the provided document. The document has these columns: 'blocks', 'floorsPerBlock', 'roomsPerFloor', 'benchesPerRoom'.`,
+        context: [{ document: { data: input.seatingLayoutDoc, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" } }],
+        output: {
+            schema: SeatingLayoutSchema,
+        },
+        model: 'googleai/gemini-1.5-flash-latest'
+    });
+
+    if (!seatingLayoutOutput) {
+        return { error: "Could not extract seating layout data. Please ensure the layout file is correctly formatted with columns: 'blocks', 'floorsPerBlock', 'roomsPerFloor', 'benchesPerRoom' and is not empty." };
+    }
+    
+    const blocks = Number(seatingLayoutOutput.blocks);
+    const floorsPerBlock = Number(seatingLayoutOutput.floorsPerBlock);
+    const roomsPerFloor = Number(seatingLayoutOutput.roomsPerFloor);
+    const benchesPerRoom = Number(seatingLayoutOutput.benchesPerRoom);
+    
+    if (isNaN(blocks) || isNaN(floorsPerBlock) || isNaN(roomsPerFloor) || isNaN(benchesPerRoom)) {
+      return { error: "One or more values in the seating layout file are not valid numbers. The AI model failed to extract them correctly. Please check the file and try again." };
+    }
+
+    const layout = { blocks, floorsPerBlock, roomsPerFloor, benchesPerRoom };
+    const totalCapacity = layout.blocks * layout.floorsPerBlock * layout.roomsPerFloor * layout.benchesPerRoom;
+
+    // Step 2: Parse the Student List Document
     const { output: studentListOutput } = await ai.generate({
       prompt: `Extract the list of students from the provided document. The document has these columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber'. Return the data as a JSON object with a 'students' array.`,
       context: [{ document: { data: input.studentListDoc, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" } }],
@@ -41,48 +82,12 @@ const seatingArrangementFlow = ai.defineFlow(
     }
     const students = studentListOutput.students;
 
-    // Step 2: Parse the Seating Layout Document with a very strict prompt
-    const { output: seatingLayoutOutput } = await ai.generate({
-        prompt: `You are a data extraction specialist. Your task is to extract data from an Excel file and return it as a valid JSON object.
-
-CRITICAL: All values for 'blocks', 'floorsPerBlock', 'roomsPerFloor', and 'benchesPerRoom' MUST be numbers, not strings.
-
-EXAMPLE: If the file has 2 blocks, 3 floors, 10 rooms, and 20 benches, the output MUST be:
-{
-  "blocks": 2,
-  "floorsPerBlock": 3,
-  "roomsPerFloor": 10,
-  "benchesPerRoom": 20
-}
-
-Now, extract the data from the provided document. The document has these columns: 'blocks', 'floorsPerBlock', 'roomsPerFloor', 'benchesPerRoom'. There will be only one row of data.`,
-        context: [{ document: { data: input.seatingLayoutDoc, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" } }],
-        output: {
-            schema: SeatingLayoutSchema,
-        },
-        model: 'googleai/gemini-1.5-flash-latest'
-    });
-
-    if (!seatingLayoutOutput) {
-        return { error: "Could not extract seating layout data. Please ensure the layout file is correctly formatted with columns: 'blocks', 'floorsPerBlock', 'roomsPerFloor', 'benchesPerRoom' and is not empty." };
-    }
-    
-    const blocks = parseInt(String(seatingLayoutOutput.blocks), 10);
-    const floorsPerBlock = parseInt(String(seatingLayoutOutput.floorsPerBlock), 10);
-    const roomsPerFloor = parseInt(String(seatingLayoutOutput.roomsPerFloor), 10);
-    const benchesPerRoom = parseInt(String(seatingLayoutOutput.benchesPerRoom), 10);
-    
-    if (isNaN(blocks) || isNaN(floorsPerBlock) || isNaN(roomsPerFloor) || isNaN(benchesPerRoom)) {
-      return { error: "One or more values in the seating layout file are not valid numbers. Please check the file and try again." };
-    }
-
-    const layout = { blocks, floorsPerBlock, roomsPerFloor, benchesPerRoom };
-    const totalCapacity = layout.blocks * layout.floorsPerBlock * layout.roomsPerFloor * layout.benchesPerRoom;
+    // Step 3: Check capacity after both files are parsed
     if(totalCapacity < students.length) {
         return { error: `Not enough seats for all students. Required: ${students.length}, Available: ${totalCapacity}` };
     }
 
-    // Step 3: Generate the seating arrangement by calling another prompt/flow
+    // Step 4: Generate the seating arrangement by calling another prompt/flow
     const { output: arrangementOutput } = await ai.generate({
       prompt: `You are a seating arrangement coordinator for an exam. Your task is to assign seats to students based on a list and a set of rules. You MUST follow these rules exactly.
 
