@@ -8,7 +8,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, StudentSchema, SeatingAssignmentSchema, ExamConfig } from '@/lib/types';
+import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, StudentSchema, SeatingAssignmentSchema, ExamConfigSchema } from '@/lib/types';
 
 
 export async function generateSeatingArrangement(
@@ -50,9 +50,9 @@ The document is provided below. Process it and extract all students.`,
     const students = studentListOutput.students;
     const seatingCapacity = students.length;
 
-    // Step 2: Generate the seating arrangement by calling another prompt/flow
+    // Step 2: Generate the seating arrangement and exam config by calling another prompt/flow
     const { output: arrangementOutput } = await ai.generate({
-      prompt: `You are a seating arrangement coordinator for an exam. Your primary tasks are to invent a plausible classroom layout and then assign every student to a unique seat.
+      prompt: `You are a seating arrangement coordinator for an exam. Your primary tasks are to invent a plausible classroom layout, assign students to unique seats, and define an exam schedule.
 
 INPUTS:
 - **STUDENT_LIST**: A JSON list of students to be seated.
@@ -61,6 +61,7 @@ INPUTS:
 TASKS:
 1.  **CREATE LAYOUT**: First, design a plausible exam hall layout with blocks, floors, and classrooms. The total number of benches across all rooms MUST equal the REQUIRED_CAPACITY.
 2.  **ASSIGN STUDENTS**: Once the layout is created, assign every student from the STUDENT_LIST to a unique bench.
+3.  **CREATE EXAM CONFIG**: Define a realistic exam schedule. The exam should start within the next 7 days and last for 3-5 days. The daily timings should be from 9:00 AM to 12:00 PM.
 
 RULES:
 1.  **RANDOMIZE**: You MUST shuffle the student list randomly before making any assignments. This is critical for fairness.
@@ -68,7 +69,7 @@ RULES:
 3.  **ANTI-CHEATING (Strict)**: You MUST try your absolute best to avoid seating two students from the same 'branch' in the same room. This is a high-priority rule.
 4.  **COMPLETE LIST**: The final 'seatingPlan' must include every single student from the 'STUDENT_LIST'.
 5.  **REAL DATA ONLY**: Do not generate, invent, or create any student data. Use only the students provided in the 'STUDENT_LIST'.
-6.  **OUTPUT FORMAT**: The output must be a JSON object with a 'seatingPlan' array.
+6.  **OUTPUT FORMAT**: The output must be a single JSON object with a 'seatingPlan' array and an 'examConfig' object.
 
 REQUIRED_CAPACITY: ${seatingCapacity}
 
@@ -77,33 +78,24 @@ STUDENT_LIST (Randomize this list before assigning):
 ${JSON.stringify(students, null, 2)}
 \`\`\`
 
-Based on the rules and inputs, first create the layout, then generate the complete seating plan.
-Example output entry: { "name": "John Doe", "hallTicketNumber": "H123", "branch": "CSE", "contactNumber": "9876543210", "block": "A", "floor": "1", "classroom": "101", "benchNumber": 1 }`,
+Based on the rules and inputs, first create the layout, then generate the complete seating plan and exam configuration.`,
       output: {
         schema: z.object({
           seatingPlan: z.array(SeatingAssignmentSchema),
+          examConfig: ExamConfigSchema,
         }),
       },
        model: 'googleai/gemini-1.5-flash-latest'
     });
 
-    if (!arrangementOutput?.seatingPlan) {
-        return { error: "Failed to generate the seating arrangement. The AI model could not create a valid plan." };
+    if (!arrangementOutput?.seatingPlan || !arrangementOutput.examConfig) {
+        return { error: "Failed to generate the seating arrangement or exam config. The AI model could not create a valid plan." };
     }
     
     if (arrangementOutput.seatingPlan.length !== students.length) {
         return { error: `The generated plan is incomplete. The model only processed ${arrangementOutput.seatingPlan.length} out of ${students.length} students. Please check the uploaded file for formatting issues and try again.` };
     }
-
-    // Dummy examConfig since it's not provided in the new flow
-    const examConfig: ExamConfig = {
-        startDate: new Date().toISOString(),
-        endDate: new Date().toISOString(),
-        startTime: { hour: "09", minute: "00" },
-        endTime: { hour: "12", minute: "00" },
-        useSamePlan: true,
-    };
     
-    return { seatingPlan: arrangementOutput.seatingPlan, examConfig: examConfig };
+    return { seatingPlan: arrangementOutput.seatingPlan, examConfig: arrangementOutput.examConfig };
   }
 );
