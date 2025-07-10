@@ -50,9 +50,17 @@ const GenerationFormSchema = z.object({
 });
 type GenerationFormType = z.infer<typeof GenerationFormSchema>;
 
+interface DisplaySeatingData {
+    plan: SeatingAssignment[];
+    examConfig: ExamConfig & {
+        startDate: Date;
+        endDate: Date;
+    };
+}
+
 export default function AdminDashboard() {
   const [isPending, startTransition] = useTransition();
-  const [seatingData, setSeatingData] = useState<{ plan: SeatingAssignment[], examConfig: ExamConfig } | null>(null);
+  const [seatingData, setSeatingData] = useState<DisplaySeatingData | null>(null);
   const { toast } = useToast();
 
   const form = useForm<GenerationFormType>({

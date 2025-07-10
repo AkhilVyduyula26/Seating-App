@@ -12,6 +12,10 @@ import { format } from "date-fns";
 import { ExamConfig, SeatingAssignment } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
+interface DisplayExamConfig extends Omit<ExamConfig, 'startDate' | 'endDate'> {
+    startDate: Date;
+    endDate: Date;
+}
 
 function getExamDates(startDate: Date, endDate: Date): Date[] {
     const dates = [];
@@ -26,7 +30,7 @@ function getExamDates(startDate: Date, endDate: Date): Date[] {
 export default function StudentDashboard({ hallTicketNumber, onBackToHome }: { hallTicketNumber: string, onBackToHome: () => void }) {
   const [isPending, startTransition] = useTransition();
   const [studentData, setStudentData] = useState<SeatingAssignment | null>(null);
-  const [examConfig, setExamConfig] = useState<ExamConfig | null>(null);
+  const [examConfig, setExamConfig] = useState<DisplayExamConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -107,7 +111,7 @@ export default function StudentDashboard({ hallTicketNumber, onBackToHome }: { h
     );
   }
   
-  const examDates = examConfig ? getExamDates(new Date(examConfig.startDate), new Date(examConfig.endDate)) : [];
+  const examDates = examConfig ? getExamDates(examConfig.startDate, examConfig.endDate) : [];
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
