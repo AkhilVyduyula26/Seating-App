@@ -53,8 +53,8 @@ const fileToDataUri = (file: File) =>
 const StudentListFormSchema = z.object({
   studentListDoc: z
     .any()
-    .refine((files) => files?.length === 1, "Student list PDF is required.")
-    .refine((files) => files?.[0]?.type === "application/pdf", "File must be a PDF."),
+    .refine((files) => files?.length === 1, "Student list CSV is required.")
+    .refine((files) => files?.[0]?.type === "text/csv", "File must be a CSV."),
 });
 type StudentListFormType = z.infer<typeof StudentListFormSchema>;
 
@@ -270,17 +270,17 @@ export default function AdminDashboard() {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel className="flex items-center gap-2">
-                                            <FileUp /> Student List File (PDF)
+                                            <FileUp /> Student List File (CSV)
                                         </FormLabel>
                                         <FormControl>
                                             <Input
                                                 type="file"
-                                                accept="application/pdf"
+                                                accept="text/csv"
                                                 onChange={(e) => field.onChange(e.target.files)}
                                             />
                                         </FormControl>
                                          <FormDescription>
-                                            Upload the PDF file with student details.
+                                            Upload the CSV file with student details. Ensure it has headers: name, hallTicketNumber, branch, contactNumber.
                                         </FormDescription>
                                         <FormMessage />
                                     </FormItem>
@@ -377,5 +377,3 @@ function FloorsFieldArray({ blockIndex, control }: { blockIndex: number, control
         </div>
     );
 }
-
-    

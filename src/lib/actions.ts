@@ -19,9 +19,9 @@ export async function createSeatingPlanAction(
   try {
     if (
       !studentListDocDataUri ||
-      !studentListDocDataUri.startsWith("data:application/pdf;base64,")
+      !studentListDocDataUri.startsWith("data:text/csv;base64,")
     ) {
-      return { error: "Invalid student list PDF file." };
+      return { error: "Invalid student list CSV file." };
     }
 
     const input: GenerateSeatingArrangementInput = {
@@ -127,5 +127,3 @@ export async function updateFacultyAuthDataAction(content: string): Promise<{ su
         return { success: false, error: "Failed to save faculty authorization data." };
     }
 }
-
-    

@@ -53,10 +53,10 @@ const seatingArrangementFlow = ai.defineFlow(
     });
 
 
-    // Step 2: Parse the Student List PDF Document
+    // Step 2: Parse the Student List CSV Document
     const { output: studentListOutput } = await ai.generate({
-      prompt: `Extract the list of students from the provided document. The document has these columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber'. Return the data as a JSON object with a 'students' array.`,
-      context: [{ document: { data: input.studentListDoc, contentType: "application/pdf" } }],
+      prompt: `Extract the list of students from the provided CSV document. The document has these columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber'. Return the data as a JSON object with a 'students' array. Ensure every single row from the CSV is parsed.`,
+      context: [{ document: { data: input.studentListDoc, contentType: "text/csv" } }],
       output: {
         schema: z.object({
           students: z.array(StudentSchema),
@@ -66,7 +66,7 @@ const seatingArrangementFlow = ai.defineFlow(
     });
     
     if (!studentListOutput?.students || studentListOutput.students.length === 0) {
-        return { error: "Could not extract any student data. Please ensure the student list PDF is correctly formatted with columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber' and is not empty." };
+        return { error: "Could not extract any student data. Please ensure the student list CSV is correctly formatted with headers: 'name', 'hallTicketNumber', 'branch', 'contactNumber' and is not empty." };
     }
     const students = studentListOutput.students;
 
@@ -123,5 +123,3 @@ Note that 'classroom' in the output schema corresponds to 'roomNo' from the avai
     return { seatingPlan: arrangementOutput.seatingPlan, examConfig: examConfig };
   }
 );
-
-    
