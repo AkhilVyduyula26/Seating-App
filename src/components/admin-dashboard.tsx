@@ -31,7 +31,6 @@ import {
   Loader2,
   Table,
   Trash2,
-  Armchair,
 } from "lucide-react";
 import { SeatingTable } from "./seating-table";
 import { ExamConfig, SeatingAssignment } from "@/lib/types";
@@ -46,7 +45,6 @@ const fileToDataUri = (file: File) =>
 
 
 const GenerationFormSchema = z.object({
-  seatingCapacity: z.string().min(1, "Seating capacity is required.").refine(val => !isNaN(parseInt(val, 10)) && parseInt(val, 10) > 0, { message: "Capacity must be a positive number."}),
   studentListDoc: z
     .any()
     .refine((files) => files?.length === 1, "Student list PDF file is required."),
@@ -62,7 +60,6 @@ export default function AdminDashboard() {
   const form = useForm<GenerationFormType>({
     resolver: zodResolver(GenerationFormSchema),
     defaultValues: {
-      seatingCapacity: "",
       studentListDoc: undefined,
     },
   });
@@ -88,10 +85,8 @@ export default function AdminDashboard() {
       
       const studentFile = data.studentListDoc[0] as File;
       const studentListDataUri = await fileToDataUri(studentFile);
-      const capacity = parseInt(data.seatingCapacity, 10);
 
       const result = await createSeatingPlanAction(
-        capacity,
         studentListDataUri,
       );
 
@@ -179,25 +174,12 @@ export default function AdminDashboard() {
                 Seating Plan Generator
             </CardTitle>
             <CardDescription>
-              Provide the total capacity and student list to generate the plan.
+              Upload the student list PDF to automatically generate the plan.
             </CardDescription>
         </CardHeader>
         <CardContent>
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <FormField
-                        control={form.control}
-                        name="seatingCapacity"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel className="flex items-center gap-2"><Armchair /> Total Seating Capacity</FormLabel>
-                                <FormControl>
-                                    <Input type="number" placeholder="e.g., 150" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
                    <FormField
                         control={form.control}
                         name="studentListDoc"

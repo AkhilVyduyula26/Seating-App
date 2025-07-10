@@ -37,7 +37,6 @@ export const GenerateSeatingArrangementInputSchema = z.object({
     .describe(
       "A PDF file containing the list of students, as a data URI."
     ),
-  seatingCapacity: z.number().describe("The total number of available seats."),
 });
 export type GenerateSeatingArrangementInput = z.infer<typeof GenerateSeatingArrangementInputSchema>;
 

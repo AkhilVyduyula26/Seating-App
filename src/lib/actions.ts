@@ -13,14 +13,12 @@ const seatingPlanPath = path.resolve(process.cwd(), ".data/seating-plan.json");
 const facultyAuthPath = path.resolve(process.cwd(), ".data/faculty-auth.json");
 
 export async function createSeatingPlanAction(
-  seatingCapacity: number,
   studentListDocDataUri: string
 ) {
   try {
 
     const input: GenerateSeatingArrangementInput = {
       studentListDoc: studentListDocDataUri,
-      seatingCapacity: seatingCapacity,
     };
     
     const result = await generateSeatingArrangement(input);

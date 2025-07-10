@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview This flow handles parsing a student PDF and generating a seating arrangement based on a total capacity.
+ * @fileOverview This flow handles parsing a student PDF and generating a seating arrangement automatically.
  * 
  * - generateSeatingArrangement - A function that orchestrates the document parsing and seat assignment.
  */
@@ -48,18 +48,14 @@ The document is provided below. Process it and extract all students.`,
         return { error: "Could not extract any student data from the PDF. Please ensure the file is correctly formatted with columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber' and is not empty." };
     }
     const students = studentListOutput.students;
+    const seatingCapacity = students.length;
 
-    // Step 2: Check capacity after parsing the student list
-    if (input.seatingCapacity < students.length) {
-        return { error: `Not enough seats for all students. Required: ${students.length}, Available: ${input.seatingCapacity}` };
-    }
-
-    // Step 3: Generate the seating arrangement by calling another prompt/flow
+    // Step 2: Generate the seating arrangement by calling another prompt/flow
     const { output: arrangementOutput } = await ai.generate({
       prompt: `You are a seating arrangement coordinator for an exam. Your primary task is to generate a plausible seating layout and then assign every student to a unique seat.
 
 INPUTS:
-- **TOTAL_CAPACITY**: ${input.seatingCapacity}
+- **TOTAL_CAPACITY**: ${seatingCapacity}
 - **STUDENT_LIST**: A JSON list of students to be seated.
 
 TASKS:
