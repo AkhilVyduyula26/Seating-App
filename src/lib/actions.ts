@@ -7,20 +7,20 @@ import {
   generateSeatingArrangement,
 } from "@/ai/flows/seat-arrangement-flow";
 import { validateFaculty } from "@/ai/flows/validate-faculty-flow";
-import type { GenerateSeatingArrangementInput, ValidateFacultyInput, ExamConfig, DynamicLayoutInput } from '@/lib/types';
+import type { GenerateSeatingArrangementInput, ValidateFacultyInput, ExamConfig } from '@/lib/types';
 
 const seatingPlanPath = path.resolve(process.cwd(), ".data/seating-plan.json");
 const facultyAuthPath = path.resolve(process.cwd(), ".data/faculty-auth.json");
 
 export async function createSeatingPlanAction(
-  seatingLayout: DynamicLayoutInput,
+  seatingCapacity: number,
   studentListDocDataUri: string
 ) {
   try {
 
     const input: GenerateSeatingArrangementInput = {
       studentListDoc: studentListDocDataUri,
-      seatingLayout: seatingLayout,
+      seatingCapacity: seatingCapacity,
     };
     
     const result = await generateSeatingArrangement(input);
@@ -121,5 +121,3 @@ export async function updateFacultyAuthDataAction(content: string): Promise<{ su
         return { success: false, error: "Failed to save faculty authorization data." };
     }
 }
-
-    

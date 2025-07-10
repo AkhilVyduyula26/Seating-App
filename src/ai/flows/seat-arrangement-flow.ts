@@ -1,14 +1,14 @@
 
 'use server';
 /**
- * @fileOverview This flow handles parsing student and seating layout documents to generate a seating arrangement.
+ * @fileOverview This flow handles parsing a student PDF and generating a seating arrangement based on a total capacity.
  * 
  * - generateSeatingArrangement - A function that orchestrates the document parsing and seat assignment.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, StudentSchema, DynamicLayoutInput, SeatingAssignmentSchema, ExamConfig } from '@/lib/types';
+import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, StudentSchema, SeatingAssignmentSchema, ExamConfig } from '@/lib/types';
 
 
 export async function generateSeatingArrangement(
@@ -25,37 +25,9 @@ const seatingArrangementFlow = ai.defineFlow(
   },
   async (input) => {
     
-    // Step 1: Generate layout from manual input
-    const layout = input.seatingLayout;
-    let totalCapacity = 0;
-    const allSeats: {block: string; floor: string; roomNo: string; benchNo: number}[] = [];
-
-    layout.blocks.forEach(block => {
-        block.floors.forEach(floor => {
-            const roomNumbers = floor.rooms.split(',').map(r => r.trim()).filter(r => r);
-            const benches = parseInt(floor.benchesPerRoom, 10);
-            if (isNaN(benches)) {
-                throw new Error(`Invalid number of benches for block ${block.name}, floor ${floor.name}`);
-            }
-            totalCapacity += roomNumbers.length * benches;
-            
-            roomNumbers.forEach(roomNo => {
-                for (let i = 1; i <= benches; i++) {
-                    allSeats.push({
-                        block: block.name,
-                        floor: floor.name,
-                        roomNo: roomNo,
-                        benchNo: i
-                    });
-                }
-            });
-        });
-    });
-
-
-    // Step 2: Parse the Student List Document (PDF, CSV, or XLSX)
+    // Step 1: Parse the Student List Document (PDF)
     const { output: studentListOutput } = await ai.generate({
-      prompt: `You are a data extraction specialist. Your task is to extract a list of students from the provided document (PDF, CSV, or XLSX). The document contains student records with the following columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber'.
+      prompt: `You are a data extraction specialist. Your task is to extract a list of all students from the provided PDF document. The document contains student records with the following columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber'.
 
 RULES:
 1.  **EXTRACT ALL RECORDS**: You MUST extract every single student record from the document. Do not skip any rows or stop prematurely.
@@ -63,7 +35,7 @@ RULES:
 3.  **STRICT FORMAT**: Return the data as a single JSON object with a single key 'students', which is an array of student objects.
 
 The document is provided below. Process it and extract all students.`,
-      context: [{ document: { data: input.studentListDoc } }], // Genkit infers content type
+      context: [{ document: { data: input.studentListDoc, contentType: "application/pdf" } }],
       output: {
         schema: z.object({
           students: z.array(StudentSchema),
@@ -73,40 +45,42 @@ The document is provided below. Process it and extract all students.`,
     });
     
     if (!studentListOutput?.students || studentListOutput.students.length === 0) {
-        return { error: "Could not extract any student data. Please ensure the student list file (PDF, CSV, or XLSX) is correctly formatted with headers: 'name', 'hallTicketNumber', 'branch', 'contactNumber' and is not empty." };
+        return { error: "Could not extract any student data from the PDF. Please ensure the file is correctly formatted with columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber' and is not empty." };
     }
     const students = studentListOutput.students;
 
-    // Step 3: Check capacity after both files are parsed
-    if(totalCapacity < students.length) {
-        return { error: `Not enough seats for all students. Required: ${students.length}, Available: ${totalCapacity}` };
+    // Step 2: Check capacity after parsing the student list
+    if (input.seatingCapacity < students.length) {
+        return { error: `Not enough seats for all students. Required: ${students.length}, Available: ${input.seatingCapacity}` };
     }
 
-    // Step 4: Generate the seating arrangement by calling another prompt/flow
+    // Step 3: Generate the seating arrangement by calling another prompt/flow
     const { output: arrangementOutput } = await ai.generate({
-      prompt: `You are a seating arrangement coordinator for an exam. Your task is to assign every student from the provided list to a unique seat from the available list. You MUST follow these rules exactly.
+      prompt: `You are a seating arrangement coordinator for an exam. Your primary task is to generate a plausible seating layout and then assign every student to a unique seat.
+
+INPUTS:
+- **TOTAL_CAPACITY**: ${input.seatingCapacity}
+- **STUDENT_LIST**: A JSON list of students to be seated.
+
+TASKS:
+1.  **GENERATE LAYOUT**: First, create a list of all possible seats (benches) that add up to the TOTAL_CAPACITY. The layout should be broken down into blocks, floors, rooms, and benches. Make up logical names (e.g., Block 'A', Floor '1', Room '101').
+2.  **ASSIGN STUDENTS**: Once the layout is created, assign every student from the STUDENT_LIST to a unique seat.
 
 RULES:
-1.  **RANDOMIZE**: You MUST shuffle the student list randomly before making any assignments. This is critical for fairness and must be done every time.
-2.  **UNIQUE ASSIGNMENT**: Assign each student to one and only one bench from the 'AVAILABLE_SEATS' list. No two students can have the same seat.
-3.  **ANTI-CHEATING (Strict)**: You MUST try your absolute best to avoid seating two students from the same 'branch' in the same 'roomNo'. This is a high-priority rule.
-4.  **COMPLETE LIST**: The final 'seatingPlan' must include every single student from the 'STUDENT_LIST'. Do not miss anyone.
+1.  **RANDOMIZE**: You MUST shuffle the student list randomly before making any assignments. This is critical for fairness.
+2.  **UNIQUE ASSIGNMENT**: Each student must be assigned to one and only one bench. No two students can have the same seat.
+3.  **ANTI-CHEATING (Strict)**: You MUST try your absolute best to avoid seating two students from the same 'branch' in the same room. This is a high-priority rule.
+4.  **COMPLETE LIST**: The final 'seatingPlan' must include every single student from the 'STUDENT_LIST'.
 5.  **REAL DATA ONLY**: Do not generate, invent, or create any student data. Use only the students provided in the 'STUDENT_LIST'.
-
-AVAILABLE_SEATS (List of all possible benches):
-\`\`\`json
-${JSON.stringify(allSeats, null, 2)}
-\`\`\`
+6.  **OUTPUT FORMAT**: The output must be a JSON object with a 'seatingPlan' array.
 
 STUDENT_LIST (Randomize this list before assigning):
 \`\`\`json
 ${JSON.stringify(students, null, 2)}
 \`\`\`
 
-Based on the rules, seats, and student list, generate the complete seating plan. The output must be a JSON object with a 'seatingPlan' array containing an entry for every student, combining their details with their assigned seat.
-Example output entry: { "name": "John Doe", "hallTicketNumber": "H123", "branch": "CSE", "contactNumber": "9876543210", "block": "SOE2", "floor": "1st", "classroom": "201", "benchNumber": 1 }
-Note that 'classroom' in the output schema corresponds to 'roomNo' from the available seats.
-`,
+Based on the rules and inputs, generate the complete seating plan.
+Example output entry: { "name": "John Doe", "hallTicketNumber": "H123", "branch": "CSE", "contactNumber": "9876543210", "block": "A", "floor": "1", "classroom": "101", "benchNumber": 1 }`,
       output: {
         schema: z.object({
           seatingPlan: z.array(SeatingAssignmentSchema),

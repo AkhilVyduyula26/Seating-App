@@ -9,32 +9,6 @@ export const StudentSchema = z.object({
 });
 export type Student = z.infer<typeof StudentSchema>;
 
-// Schema for manual layout input from the admin form
-export const DynamicFloorSchema = z.object({
-    name: z.string().min(1, "Floor name is required."),
-    rooms: z.string().min(1, "Room numbers are required."),
-    benchesPerRoom: z.string().min(1, "Benches per room is required.").refine(val => !isNaN(parseInt(val, 10)), { message: "Benches must be a number."}),
-});
-
-export const DynamicBlockSchema = z.object({
-    name: z.string().min(1, "Block name is required."),
-    floors: z.array(DynamicFloorSchema).min(1, "At least one floor is required."),
-});
-
-export const DynamicLayoutInputSchema = z.object({
-    blocks: z.array(DynamicBlockSchema).min(1, "At least one block is required."),
-});
-export type DynamicLayoutInput = z.infer<typeof DynamicLayoutInputSchema>;
-
-
-export const SeatingLayoutSchema = z.object({
-  blocks: z.any().describe('Total number of blocks available.'),
-  floorsPerBlock: z.any().describe('Number of floors in each block.'),
-  roomsPerFloor: z.any().describe('Number of rooms on each floor.'),
-  benchesPerRoom: z.any().describe('Number of benches in each room.'),
-});
-export type SeatingLayout = z.infer<typeof SeatingLayoutSchema>;
-
 
 export const SeatingAssignmentSchema = z.object({
     name: z.string(),
@@ -61,9 +35,9 @@ export const GenerateSeatingArrangementInputSchema = z.object({
   studentListDoc: z
     .string()
     .describe(
-      "A PDF, CSV, or XLSX file containing the list of students, as a data URI."
+      "A PDF file containing the list of students, as a data URI."
     ),
-  seatingLayout: DynamicLayoutInputSchema,
+  seatingCapacity: z.number().describe("The total number of available seats."),
 });
 export type GenerateSeatingArrangementInput = z.infer<typeof GenerateSeatingArrangementInputSchema>;
 
