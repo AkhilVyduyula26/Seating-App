@@ -33,10 +33,12 @@ import {
   Trash2,
   Calendar as CalendarIcon,
   Clock,
-  Repeat
+  Repeat,
+  CheckCircle,
+  ArrowRight
 } from "lucide-react";
 import { SeatingTable } from "./seating-table";
-import { ExamConfig } from "@/lib/types";
+import { ExamConfig, SeatingLayout } from "@/lib/types";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -64,13 +66,16 @@ const timeOptions = (interval: number) => {
   return options;
 };
 
-const AdminDashboardSchema = z.object({
+const SeatingLayoutFormSchema = z.object({
+    seatingLayoutDoc: z.any().refine((files) => files?.length === 1, "Seating layout file is required."),
+});
+type SeatingLayoutFormType = z.infer<typeof SeatingLayoutFormSchema>;
+
+
+const StudentListFormSchema = z.object({
   studentListDoc: z
     .any()
     .refine((files) => files?.length === 1, "Student list file is required."),
-  seatingLayoutDoc: z
-    .any()
-    .refine((files) => files?.length === 1, "Seating layout file is required."),
   startDate: z.date({ required_error: "Start date is required." }),
   endDate: z.date({ required_error: "End date is required." }),
   startTime: z.string({ required_error: "Start time is required." }),
@@ -80,16 +85,21 @@ const AdminDashboardSchema = z.object({
     message: "End date cannot be before start date.",
     path: ["endDate"],
 });
-
-type AdminDashboardType = z.infer<typeof AdminDashboardSchema>;
+type StudentListFormType = z.infer<typeof StudentListFormSchema>;
 
 export default function AdminDashboard() {
   const [isPending, startTransition] = useTransition();
   const [seatingData, setSeatingData] = useState<{ plan: any[], examConfig: ExamConfig } | null>(null);
   const { toast } = useToast();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [seatingLayoutDocUri, setSeatingLayoutDocUri] = useState<string | null>(null);
 
-  const form = useForm<AdminDashboardType>({
-    resolver: zodResolver(AdminDashboardSchema),
+  const layoutForm = useForm<SeatingLayoutFormType>({
+    resolver: zodResolver(SeatingLayoutFormSchema),
+  });
+
+  const studentForm = useForm<StudentListFormType>({
+    resolver: zodResolver(StudentListFormSchema),
     defaultValues: {
         useSamePlan: true,
         startTime: '10:30',
@@ -113,15 +123,26 @@ export default function AdminDashboard() {
     });
   }, []);
 
-  const onSubmit: SubmitHandler<AdminDashboardType> = (data) => {
+  const handleLayoutSubmit: SubmitHandler<SeatingLayoutFormType> = (data) => {
     startTransition(async () => {
-      const studentFile = data.studentListDoc[0] as File;
-      const layoutFile = data.seatingLayoutDoc[0] as File;
+        const layoutFile = data.seatingLayoutDoc[0] as File;
+        const dataUri = await fileToDataUri(layoutFile);
+        setSeatingLayoutDocUri(dataUri);
+        setCurrentStep(2);
+    });
+  };
+
+
+  const handleStudentSubmit: SubmitHandler<StudentListFormType> = (data) => {
+    startTransition(async () => {
+      if (!seatingLayoutDocUri) {
+          toast({ variant: 'destructive', title: 'Error', description: 'Seating layout file is missing.' });
+          setCurrentStep(1);
+          return;
+      }
       
-      const [studentListDataUri, seatingLayoutDataUri] = await Promise.all([
-        fileToDataUri(studentFile),
-        fileToDataUri(layoutFile),
-      ]);
+      const studentFile = data.studentListDoc[0] as File;
+      const studentListDataUri = await fileToDataUri(studentFile);
         
       const examConfig: ExamConfig = {
         startDate: data.startDate.toISOString(),
@@ -139,7 +160,7 @@ export default function AdminDashboard() {
 
       const result = await createSeatingPlanAction(
         studentListDataUri,
-        seatingLayoutDataUri,
+        seatingLayoutDocUri,
         examConfig,
       );
 
@@ -174,7 +195,10 @@ export default function AdminDashboard() {
         const result = await deleteSeatingDataAction();
         if (result.success) {
             setSeatingData(null);
-            form.reset();
+            setCurrentStep(1);
+            setSeatingLayoutDocUri(null);
+            layoutForm.reset();
+            studentForm.reset();
             toast({
                 title: 'Plan Deleted',
                 description: 'The seating plan has been cleared.',
@@ -189,7 +213,7 @@ export default function AdminDashboard() {
     });
   };
 
-  if (isPending && !seatingData) {
+  if (isPending && !seatingData && currentStep === 1) {
     return (
         <div className="flex items-center justify-center p-8">
             <Loader2 className="h-8 w-8 animate-spin" />
@@ -240,223 +264,264 @@ export default function AdminDashboard() {
 
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-lg">
-      <CardHeader>
-        <CardTitle className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-                <Table />
-                Seating Plan Generator
-            </div>
-        </CardTitle>
-        <CardDescription>
-          Upload student and seating layout Excel files to generate the exam seating arrangement.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                control={form.control}
-                name="studentListDoc"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                        <FileUp /> Student List File
-                    </FormLabel>
-                    <FormControl>
-                        <Input
-                        type="file"
-                        accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                        onChange={(e) => field.onChange(e.target.files)}
-                        />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-                <FormField
-                control={form.control}
-                name="seatingLayoutDoc"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                        <FileUp /> Seating Layout File
-                    </FormLabel>
-                    <FormControl>
-                        <Input
-                        type="file"
-                        accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                        onChange={(e) => field.onChange(e.target.files)}
-                        />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-            </div>
-
-            <div className="space-y-4 rounded-lg border p-4">
-                <h3 className="font-medium flex items-center gap-2"><CalendarIcon /> Exam Schedule</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                        control={form.control}
-                        name="startDate"
-                        render={({ field }) => (
-                            <FormItem className="flex flex-col">
-                            <FormLabel>Start Date</FormLabel>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                <FormControl>
-                                    <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                        "pl-3 text-left font-normal",
-                                        !field.value && "text-muted-foreground"
-                                    )}
-                                    >
-                                    {field.value ? (
-                                        format(field.value, "PPP")
-                                    ) : (
-                                        <span>Pick a date</span>
-                                    )}
-                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                    </Button>
-                                </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                    mode="single"
-                                    selected={field.value}
-                                    onSelect={field.onChange}
-                                    initialFocus
-                                />
-                                </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="endDate"
-                        render={({ field }) => (
-                            <FormItem className="flex flex-col">
-                            <FormLabel>End Date</FormLabel>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                <FormControl>
-                                    <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                        "pl-3 text-left font-normal",
-                                        !field.value && "text-muted-foreground"
-                                    )}
-                                    >
-                                    {field.value ? (
-                                        format(field.value, "PPP")
-                                    ) : (
-                                        <span>Pick a date</span>
-                                    )}
-                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                    </Button>
-                                </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                    mode="single"
-                                    selected={field.value}
-                                    onSelect={field.onChange}
-                                    disabled={(date) =>
-                                        date < (form.getValues("startDate") || new Date())
-                                    }
-                                    initialFocus
-                                />
-                                </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+        <CardHeader>
+            <CardTitle className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                    <Table />
+                    Seating Plan Generator
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <FormField
-                        control={form.control}
-                        name="startTime"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel className="flex items-center gap-2"><Clock /> Start Time</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select start time" />
-                                </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {timeOptions(30).map(time => <SelectItem key={time} value={time}>{time}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                     <FormField
-                        control={form.control}
-                        name="endTime"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel className="flex items-center gap-2"><Clock /> End Time</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select end time" />
-                                </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {timeOptions(30).map(time => <SelectItem key={time} value={time}>{time}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </div>
-                 <FormField
-                    control={form.control}
-                    name="useSamePlan"
-                    render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                        <div className="space-y-0.5">
-                            <FormLabel className="flex items-center gap-2"><Repeat /> Use Same Seating Plan for All Exam Days</FormLabel>
-                            <FormDescription>
-                            If enabled, the same seat is assigned for all days.
-                            </FormDescription>
-                        </div>
-                        <FormControl>
-                            <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
+            </CardTitle>
+            <CardDescription>
+              Follow the steps below to generate the exam seating arrangement.
+            </CardDescription>
+        </CardHeader>
+        <CardContent>
+            {currentStep === 1 && (
+                <div className="animate-in fade-in">
+                    <Form {...layoutForm}>
+                        <form onSubmit={layoutForm.handleSubmit(handleLayoutSubmit)} className="space-y-6">
+                            <h3 className="font-semibold text-lg">Step 1: Upload Seating Capacity</h3>
+                            <FormField
+                                control={layoutForm.control}
+                                name="seatingLayoutDoc"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="flex items-center gap-2">
+                                            <FileUp /> Seating Layout File
+                                        </FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                type="file"
+                                                accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                                                onChange={(e) => field.onChange(e.target.files)}
+                                            />
+                                        </FormControl>
+                                        <FormDescription>
+                                            Upload the Excel file with block, floor, room, and bench details.
+                                        </FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
                             />
-                        </FormControl>
-                        </FormItem>
-                    )}
-                />
-            </div>
-            
-            <Button
-              type="submit"
-              className="w-full bg-primary hover:bg-primary/90"
-              disabled={isPending}
-            >
-              {isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Table className="mr-2 h-4 w-4" />
-              )}
-              Create Seating Plan
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
+                            <Button type="submit" disabled={isPending}>
+                                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <>Next <ArrowRight className="ml-2" /></>}
+                            </Button>
+                        </form>
+                    </Form>
+                </div>
+            )}
+
+            {currentStep === 2 && (
+                 <div className="animate-in fade-in">
+                    <div className="p-4 rounded-md bg-green-50 border border-green-200 mb-6 flex items-center gap-4">
+                        <CheckCircle className="h-6 w-6 text-green-600" />
+                        <div>
+                            <h4 className="font-semibold text-green-800">Step 1 Complete</h4>
+                            <p className="text-sm text-green-700">Seating capacity file uploaded successfully.</p>
+                        </div>
+                    </div>
+                     <Form {...studentForm}>
+                        <form onSubmit={studentForm.handleSubmit(handleStudentSubmit)} className="space-y-6">
+                            <h3 className="font-semibold text-lg">Step 2: Upload Student List & Schedule</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <FormField
+                                    control={studentForm.control}
+                                    name="studentListDoc"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="flex items-center gap-2">
+                                                <FileUp /> Student List File
+                                            </FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    type="file"
+                                                    accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                                                    onChange={(e) => field.onChange(e.target.files)}
+                                                />
+                                            </FormControl>
+                                             <FormDescription>
+                                                Upload the Excel file with student details.
+                                            </FormDescription>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+
+                            <div className="space-y-4 rounded-lg border p-4">
+                                <h3 className="font-medium flex items-center gap-2"><CalendarIcon /> Exam Schedule</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField
+                                        control={studentForm.control}
+                                        name="startDate"
+                                        render={({ field }) => (
+                                            <FormItem className="flex flex-col">
+                                            <FormLabel>Start Date</FormLabel>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                <FormControl>
+                                                    <Button
+                                                    variant={"outline"}
+                                                    className={cn(
+                                                        "pl-3 text-left font-normal",
+                                                        !field.value && "text-muted-foreground"
+                                                    )}
+                                                    >
+                                                    {field.value ? (
+                                                        format(field.value, "PPP")
+                                                    ) : (
+                                                        <span>Pick a date</span>
+                                                    )}
+                                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                    </Button>
+                                                </FormControl>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0" align="start">
+                                                <Calendar
+                                                    mode="single"
+                                                    selected={field.value}
+                                                    onSelect={field.onChange}
+                                                    initialFocus
+                                                />
+                                                </PopoverContent>
+                                            </Popover>
+                                            <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={studentForm.control}
+                                        name="endDate"
+                                        render={({ field }) => (
+                                            <FormItem className="flex flex-col">
+                                            <FormLabel>End Date</FormLabel>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                <FormControl>
+                                                    <Button
+                                                    variant={"outline"}
+                                                    className={cn(
+                                                        "pl-3 text-left font-normal",
+                                                        !field.value && "text-muted-foreground"
+                                                    )}
+                                                    >
+                                                    {field.value ? (
+                                                        format(field.value, "PPP")
+                                                    ) : (
+                                                        <span>Pick a date</span>
+                                                    )}
+                                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                    </Button>
+                                                </FormControl>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0" align="start">
+                                                <Calendar
+                                                    mode="single"
+                                                    selected={field.value}
+                                                    onSelect={field.onChange}
+                                                    disabled={(date) =>
+                                                        date < (studentForm.getValues("startDate") || new Date())
+                                                    }
+                                                    initialFocus
+                                                />
+                                                </PopoverContent>
+                                            </Popover>
+                                            <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField
+                                        control={studentForm.control}
+                                        name="startTime"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                            <FormLabel className="flex items-center gap-2"><Clock /> Start Time</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select start time" />
+                                                </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {timeOptions(30).map(time => <SelectItem key={time} value={time}>{time}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={studentForm.control}
+                                        name="endTime"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                            <FormLabel className="flex items-center gap-2"><Clock /> End Time</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select end time" />
+                                                </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {timeOptions(30).map(time => <SelectItem key={time} value={time}>{time}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                                <FormField
+                                    control={studentForm.control}
+                                    name="useSamePlan"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                        <div className="space-y-0.5">
+                                            <FormLabel className="flex items-center gap-2"><Repeat /> Use Same Seating Plan for All Exam Days</FormLabel>
+                                            <FormDescription>
+                                            If enabled, the same seat is assigned for all days.
+                                            </FormDescription>
+                                        </div>
+                                        <FormControl>
+                                            <Switch
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+
+                            <div className="flex gap-4">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => setCurrentStep(1)}
+                                  disabled={isPending}
+                                >
+                                  Back
+                                </Button>
+                                <Button
+                                type="submit"
+                                className="w-full bg-primary hover:bg-primary/90"
+                                disabled={isPending}
+                                >
+                                {isPending ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Table className="mr-2 h-4 w-4" />
+                                )}
+                                Create Seating Plan
+                                </Button>
+                            </div>
+                        </form>
+                    </Form>
+                </div>
+            )}
+        </CardContent>
     </Card>
   );
 }

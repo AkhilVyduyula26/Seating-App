@@ -94,7 +94,8 @@ Now, extract the data from the provided document. The document has these columns
 RULES:
 1.  Assign a unique seat to every student from the provided list. Do not invent students.
 2.  **CRUCIAL ANTI-CHEATING RULE**: To prevent cheating, no two students from the same branch (e.g., two 'CSE' students) should be seated directly next to each other on consecutive benches in the same room. You must alternate branches.
-3.  Fill seats sequentially: Fill all benches in a room, then all rooms on a floor, then all floors in a block, before moving to the next block. (Block -> Floor -> Room -> Bench).
+3.  **RANDOMIZATION**: Randomize the student list before assigning seats to ensure the final arrangement is not predictable.
+4.  Fill seats sequentially after randomization: Fill all benches in a room, then all rooms on a floor, then all floors in a block, before moving to the next block. (Block -> Floor -> Room -> Bench).
 
 AVAILABLE SEATING LAYOUT:
 - Total Blocks: ${layout.blocks} (Named SOE1, SOE2, etc.)
@@ -102,7 +103,7 @@ AVAILABLE SEATING LAYOUT:
 - Classrooms per Floor: ${layout.roomsPerFloor} (Numbered starting from 101, 102... for floor 1; 201, 202... for floor 2, etc.)
 - Benches per Classroom: ${layout.benchesPerRoom} (Numbered 1, 2, 3...)
 
-STUDENT LIST TO BE SEATED:
+STUDENT LIST TO BE SEATED (randomize before assigning):
 \`\`\`json
 ${JSON.stringify(students, null, 2)}
 \`\`\`
