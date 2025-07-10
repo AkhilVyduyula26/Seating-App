@@ -7,18 +7,20 @@ import {
   generateSeatingArrangement,
 } from "@/ai/flows/seat-arrangement-flow";
 import { validateFaculty } from "@/ai/flows/validate-faculty-flow";
-import type { GenerateSeatingArrangementInput, ValidateFacultyInput, ExamConfig } from '@/lib/types';
+import type { GenerateSeatingArrangementInput, ValidateFacultyInput, ExamConfig, SeatingLayout } from '@/lib/types';
 
 const seatingPlanPath = path.resolve(process.cwd(), ".data/seating-plan.json");
 const facultyAuthPath = path.resolve(process.cwd(), ".data/faculty-auth.json");
 
 export async function createSeatingPlanAction(
-  studentListDocDataUri: string
+  studentListDocDataUri: string,
+  seatingLayout: SeatingLayout
 ) {
   try {
 
     const input: GenerateSeatingArrangementInput = {
       studentListDoc: studentListDocDataUri,
+      seatingLayout: seatingLayout,
     };
     
     const result = await generateSeatingArrangement(input);
@@ -56,7 +58,8 @@ export async function getSeatingDataAction(): Promise<{
     return { plan: parsedData.plan, examConfig: parsedData.examConfig };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return { error: "No seating plan has been generated yet."};
+      // Return null instead of an error string to indicate no plan exists
+      return { plan: undefined, examConfig: undefined };
     }
     console.error("Error fetching seating data:", error);
     return { error: "Failed to load seating data." };

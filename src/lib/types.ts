@@ -31,12 +31,27 @@ export const ExamConfigSchema = z.object({
 });
 export type ExamConfig = z.infer<typeof ExamConfigSchema>;
 
+export const ClassroomConfigSchema = z.object({
+  block: z.string().min(1, "Block is required."),
+  floor: z.string().min(1, "Floor is required."),
+  roomNumber: z.string().min(1, "Room number is required."),
+  benchCount: z.number().min(1, "Bench count must be at least 1."),
+});
+export type ClassroomConfig = z.infer<typeof ClassroomConfigSchema>;
+
+export const SeatingLayoutSchema = z.object({
+  classrooms: z.array(ClassroomConfigSchema),
+});
+export type SeatingLayout = z.infer<typeof SeatingLayoutSchema>;
+
+
 export const GenerateSeatingArrangementInputSchema = z.object({
   studentListDoc: z
     .string()
     .describe(
       "A PDF file containing the list of students, as a data URI."
     ),
+  seatingLayout: SeatingLayoutSchema,
 });
 export type GenerateSeatingArrangementInput = z.infer<typeof GenerateSeatingArrangementInputSchema>;
 

@@ -1,14 +1,14 @@
 
 'use server';
 /**
- * @fileOverview This flow handles parsing a student PDF and generating a seating arrangement automatically.
+ * @fileOverview This flow handles parsing a student PDF and generating a seating arrangement automatically based on a user-defined layout.
  * 
  * - generateSeatingArrangement - A function that orchestrates the document parsing and seat assignment.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, StudentSchema, SeatingAssignmentSchema, ExamConfig } from '@/lib/types';
+import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, StudentSchema, SeatingAssignmentSchema, SeatingLayoutSchema, ExamConfig, ClassroomConfig } from '@/lib/types';
 
 
 export async function generateSeatingArrangement(
@@ -48,19 +48,35 @@ The document is provided below. Process it and extract all students.`,
         return { error: "Could not extract any student data from the PDF. Please ensure the file is correctly formatted with columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber' and is not empty." };
     }
     const students = studentListOutput.students;
-    const seatingCapacity = students.length;
+    
+    // Create the full list of available seats from the layout
+    const availableSeats: Omit<SeatingAssignment, 'name' | 'hallTicketNumber' | 'branch' | 'contactNumber'>[] = [];
+    input.seatingLayout.classrooms.forEach(room => {
+        for (let i = 1; i <= room.benchCount; i++) {
+            availableSeats.push({
+                block: room.block,
+                floor: room.floor,
+                classroom: room.roomNumber,
+                benchNumber: i,
+            });
+        }
+    });
+
+    if (students.length > availableSeats.length) {
+        return { error: `Not enough seats for all students. ${students.length} students need seats, but capacity is only ${availableSeats.length}.` };
+    }
+
 
     // Step 2: Generate the seating arrangement by calling another prompt/flow
     const { output: arrangementOutput } = await ai.generate({
-      prompt: `You are a seating arrangement coordinator for an exam. Your primary task is to generate a plausible seating layout and then assign every student to a unique seat.
+      prompt: `You are a seating arrangement coordinator for an exam. Your primary task is to assign every student to a unique seat from the provided list of available seats.
 
 INPUTS:
-- **TOTAL_CAPACITY**: ${seatingCapacity}
 - **STUDENT_LIST**: A JSON list of students to be seated.
+- **AVAILABLE_SEATS**: A JSON list of all available seats (block, floor, classroom, benchNumber).
 
 TASKS:
-1.  **GENERATE LAYOUT**: First, create a list of all possible seats (benches) that add up to the TOTAL_CAPACITY. The layout should be broken down into blocks, floors, rooms, and benches. Make up logical names (e.g., Block 'A', Floor '1', Room '101').
-2.  **ASSIGN STUDENTS**: Once the layout is created, assign every student from the STUDENT_LIST to a unique seat.
+1.  **ASSIGN STUDENTS**: Assign every student from the STUDENT_LIST to a unique seat from the AVAILABLE_SEATS list.
 
 RULES:
 1.  **RANDOMIZE**: You MUST shuffle the student list randomly before making any assignments. This is critical for fairness.
@@ -68,11 +84,17 @@ RULES:
 3.  **ANTI-CHEATING (Strict)**: You MUST try your absolute best to avoid seating two students from the same 'branch' in the same room. This is a high-priority rule.
 4.  **COMPLETE LIST**: The final 'seatingPlan' must include every single student from the 'STUDENT_LIST'.
 5.  **REAL DATA ONLY**: Do not generate, invent, or create any student data. Use only the students provided in the 'STUDENT_LIST'.
-6.  **OUTPUT FORMAT**: The output must be a JSON object with a 'seatingPlan' array.
+6.  **USE PROVIDED SEATS ONLY**: You must only use seats from the 'AVAILABLE_SEATS' list.
+7.  **OUTPUT FORMAT**: The output must be a JSON object with a 'seatingPlan' array.
 
 STUDENT_LIST (Randomize this list before assigning):
 \`\`\`json
 ${JSON.stringify(students, null, 2)}
+\`\`\`
+
+AVAILABLE_SEATS (Use these seats for assignment):
+\`\`\`json
+${JSON.stringify(availableSeats, null, 2)}
 \`\`\`
 
 Based on the rules and inputs, generate the complete seating plan.

@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
-import { useForm, type SubmitHandler } from "react-hook-form";
+import { useState, useTransition } from "react";
+import { useForm, useFieldArray, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -31,9 +31,16 @@ import {
   Loader2,
   Table,
   Trash2,
+  PlusCircle,
+  Building,
+  School,
+  Armchair,
+  ArrowRight,
+  ArrowLeft
 } from "lucide-react";
 import { SeatingTable } from "./seating-table";
-import { ExamConfig, SeatingAssignment } from "@/lib/types";
+import { ExamConfig, SeatingAssignment, ClassroomConfigSchema, SeatingLayoutSchema } from "@/lib/types";
+import type { SeatingLayout } from "@/lib/types";
 
 const fileToDataUri = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -43,7 +50,6 @@ const fileToDataUri = (file: File) =>
     reader.readAsDataURL(file);
   });
 
-
 const GenerationFormSchema = z.object({
   studentListDoc: z
     .any()
@@ -51,20 +57,30 @@ const GenerationFormSchema = z.object({
 });
 type GenerationFormType = z.infer<typeof GenerationFormSchema>;
 
-
 export default function AdminDashboard() {
   const [isPending, startTransition] = useTransition();
   const [seatingData, setSeatingData] = useState<{ plan: SeatingAssignment[], examConfig: ExamConfig } | null>(null);
+  const [step, setStep] = useState(1);
+  const [seatingLayout, setSeatingLayout] = useState<SeatingLayout | null>(null);
   const { toast } = useToast();
 
-  const form = useForm<GenerationFormType>({
-    resolver: zodResolver(GenerationFormSchema),
+  const layoutForm = useForm<z.infer<typeof SeatingLayoutSchema>>({
+    resolver: zodResolver(SeatingLayoutSchema),
     defaultValues: {
-      studentListDoc: undefined,
+      classrooms: [{ block: 'A', floor: '1', roomNumber: '101', benchCount: 20 }]
     },
   });
 
-  useEffect(() => {
+  const { fields, append, remove } = useFieldArray({
+    control: layoutForm.control,
+    name: "classrooms",
+  });
+
+  const uploadForm = useForm<GenerationFormType>({
+    resolver: zodResolver(GenerationFormSchema),
+  });
+
+  useState(() => {
     startTransition(async () => {
       const data = await getSeatingDataAction();
       if (data.plan && data.examConfig) {
@@ -78,16 +94,26 @@ export default function AdminDashboard() {
         });
       }
     });
-  }, []);
+  });
   
-  const onSubmit: SubmitHandler<GenerationFormType> = (data) => {
+  const onLayoutSubmit: SubmitHandler<SeatingLayout> = (data) => {
+    setSeatingLayout(data);
+    setStep(2);
+  };
+  
+  const onUploadSubmit: SubmitHandler<GenerationFormType> = (data) => {
     startTransition(async () => {
+      if (!seatingLayout) {
+        toast({ variant: "destructive", title: "Error", description: "Seating layout is missing." });
+        return;
+      }
       
       const studentFile = data.studentListDoc[0] as File;
       const studentListDataUri = await fileToDataUri(studentFile);
 
       const result = await createSeatingPlanAction(
         studentListDataUri,
+        seatingLayout,
       );
 
       if (result.success && result.plan && result.examConfig) {
@@ -118,7 +144,10 @@ export default function AdminDashboard() {
         const result = await deleteSeatingDataAction();
         if (result.success) {
             setSeatingData(null);
-            form.reset();
+            uploadForm.reset();
+            layoutForm.reset();
+            setStep(1);
+            setSeatingLayout(null);
             toast({
                 title: 'Plan Deleted',
                 description: 'The seating plan has been cleared.',
@@ -132,6 +161,8 @@ export default function AdminDashboard() {
         }
     });
   };
+
+  const totalCapacity = layoutForm.watch('classrooms').reduce((acc, curr) => acc + (Number(curr.benchCount) || 0), 0);
 
   if (isPending && !seatingData) {
     return (
@@ -167,56 +198,114 @@ export default function AdminDashboard() {
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto shadow-lg">
-        <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-                <Table />
-                Seating Plan Generator
-            </CardTitle>
-            <CardDescription>
-              Upload the student list PDF to automatically generate the plan.
-            </CardDescription>
-        </CardHeader>
-        <CardContent>
-            <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                   <FormField
-                        control={form.control}
-                        name="studentListDoc"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel className="flex items-center gap-2">
-                                    <FileUp /> Student List File (PDF)
-                                </FormLabel>
-                                <FormControl>
-                                    <Input
-                                        type="file"
-                                        accept=".pdf"
-                                        onChange={(e) => field.onChange(e.target.files)}
-                                    />
-                                </FormControl>
-                                 <FormDescription>
-                                    Upload the PDF with student details. Ensure it has headers: name, hallTicketNumber, branch, contactNumber.
-                                </FormDescription>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <Button
-                        type="submit"
-                        className="w-full bg-primary hover:bg-primary/90"
-                        disabled={isPending}
-                        >
-                        {isPending ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                            <Table className="mr-2 h-4 w-4" />
-                        )}
-                        Generate Seating Plan
-                    </Button>
-                </form>
-            </Form>
-        </CardContent>
+    <Card className="w-full max-w-4xl mx-auto shadow-lg">
+        {step === 1 && (
+            <>
+            <CardHeader>
+                <CardTitle>Step 1: Configure Exam Hall Layout</CardTitle>
+                <CardDescription>Define the blocks, floors, and rooms available for the exam. The total capacity will be calculated automatically.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Form {...layoutForm}>
+                    <form onSubmit={layoutForm.handleSubmit(onLayoutSubmit)} className="space-y-6">
+                        {fields.map((field, index) => (
+                          <div key={field.id} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end p-4 border rounded-lg relative">
+                             <FormField
+                                control={layoutForm.control}
+                                name={`classrooms.${index}.block`}
+                                render={({ field }) => (
+                                    <FormItem><FormLabel><Building className="inline-block mr-1"/>Block</FormLabel><FormControl><Input placeholder="e.g., A" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}
+                             />
+                             <FormField
+                                control={layoutForm.control}
+                                name={`classrooms.${index}.floor`}
+                                render={({ field }) => (
+                                    <FormItem><FormLabel><School className="inline-block mr-1"/>Floor</FormLabel><FormControl><Input placeholder="e.g., 1" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}
+                             />
+                             <FormField
+                                control={layoutForm.control}
+                                name={`classrooms.${index}.roomNumber`}
+                                render={({ field }) => (
+                                    <FormItem><FormLabel><School className="inline-block mr-1"/>Room No.</FormLabel><FormControl><Input placeholder="e.g., 101" {...field} /></FormControl><FormMessage /></FormItem>
+                                )}
+                             />
+                             <FormField
+                                control={layoutForm.control}
+                                name={`classrooms.${index}.benchCount`}
+                                render={({ field }) => (
+                                    <FormItem><FormLabel><Armchair className="inline-block mr-1"/>Benches</FormLabel><FormControl><Input type="number" placeholder="e.g., 20" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)}/></FormControl><FormMessage /></FormItem>
+                                )}
+                             />
+                             {fields.length > 1 && <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive"/></Button>}
+                          </div>
+                        ))}
+                        <div className="flex justify-between items-center">
+                            <Button type="button" variant="outline" onClick={() => append({ block: 'A', floor: '1', roomNumber: '', benchCount: 20 })}>
+                                <PlusCircle className="mr-2"/> Add Room
+                            </Button>
+                            <div className="text-lg font-bold">
+                                Total Capacity: <span className="text-primary">{totalCapacity}</span>
+                            </div>
+                        </div>
+                         <Button type="submit" className="w-full">
+                            Next Step <ArrowRight className="ml-2"/>
+                         </Button>
+                    </form>
+                </Form>
+            </CardContent>
+            </>
+        )}
+        {step === 2 && (
+             <>
+            <CardHeader>
+                 <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="absolute top-4 left-4"><ArrowLeft className="mr-2"/> Back</Button>
+                <CardTitle className="text-center">Step 2: Upload Student List</CardTitle>
+                <CardDescription className="text-center">Upload the PDF with student details. The number of students should not exceed the capacity of <span className="font-bold text-primary">{totalCapacity}</span>.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Form {...uploadForm}>
+                    <form onSubmit={uploadForm.handleSubmit(onUploadSubmit)} className="space-y-6">
+                       <FormField
+                            control={uploadForm.control}
+                            name="studentListDoc"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="flex items-center gap-2">
+                                        <FileUp /> Student List File (PDF)
+                                    </FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            type="file"
+                                            accept=".pdf"
+                                            onChange={(e) => field.onChange(e.target.files)}
+                                        />
+                                    </FormControl>
+                                     <FormDescription>
+                                        Ensure the PDF has headers: name, hallTicketNumber, branch, contactNumber.
+                                    </FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <Button
+                            type="submit"
+                            className="w-full"
+                            disabled={isPending}
+                            >
+                            {isPending ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Table className="mr-2 h-4 w-4" />
+                            )}
+                            Generate Seating Plan
+                        </Button>
+                    </form>
+                </Form>
+            </CardContent>
+            </>
+        )}
     </Card>
   );
 }
