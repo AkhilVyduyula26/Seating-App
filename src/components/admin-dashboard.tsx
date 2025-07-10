@@ -53,11 +53,7 @@ const fileToDataUri = (file: File) =>
 const StudentListFormSchema = z.object({
   studentListDoc: z
     .any()
-    .refine((files) => files?.length === 1, "Student list file is required.")
-    .refine((files) => {
-        const file = files?.[0];
-        return file?.type === "text/csv" || file?.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    }, "File must be a CSV or XLSX."),
+    .refine((files) => files?.length === 1, "Student list file is required."),
 });
 type StudentListFormType = z.infer<typeof StudentListFormSchema>;
 
@@ -273,17 +269,17 @@ export default function AdminDashboard() {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel className="flex items-center gap-2">
-                                            <FileUp /> Student List File (CSV or XLSX)
+                                            <FileUp /> Student List File (PDF, CSV, or XLSX)
                                         </FormLabel>
                                         <FormControl>
                                             <Input
                                                 type="file"
-                                                accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                                                accept=".pdf, .csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                                                 onChange={(e) => field.onChange(e.target.files)}
                                             />
                                         </FormControl>
                                          <FormDescription>
-                                            Upload the CSV or Excel file with student details. Ensure it has headers: name, hallTicketNumber, branch, contactNumber.
+                                            Upload the file with student details. Ensure it has headers: name, hallTicketNumber, branch, contactNumber.
                                         </FormDescription>
                                         <FormMessage />
                                     </FormItem>
@@ -380,5 +376,3 @@ function FloorsFieldArray({ blockIndex, control }: { blockIndex: number, control
         </div>
     );
 }
-
-    

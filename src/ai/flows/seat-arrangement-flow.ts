@@ -53,9 +53,16 @@ const seatingArrangementFlow = ai.defineFlow(
     });
 
 
-    // Step 2: Parse the Student List CSV/XLSX Document
+    // Step 2: Parse the Student List Document (PDF, CSV, or XLSX)
     const { output: studentListOutput } = await ai.generate({
-      prompt: `Extract the list of students from the provided document. The document has these columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber'. You must extract every single student record from the document. Do not skip any rows. Do not generate any fake data. Return the data as a JSON object with a 'students' array.`,
+      prompt: `You are a data extraction specialist. Your task is to extract a list of students from the provided document (PDF, CSV, or XLSX). The document contains student records with the following columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber'.
+
+RULES:
+1.  **EXTRACT ALL RECORDS**: You MUST extract every single student record from the document. Do not skip any rows or stop prematurely.
+2.  **NO FAKE DATA**: Do NOT generate, invent, or create any student data. Use ONLY the data present in the document.
+3.  **STRICT FORMAT**: Return the data as a single JSON object with a single key 'students', which is an array of student objects.
+
+The document is provided below. Process it and extract all students.`,
       context: [{ document: { data: input.studentListDoc } }], // Genkit infers content type
       output: {
         schema: z.object({
@@ -66,7 +73,7 @@ const seatingArrangementFlow = ai.defineFlow(
     });
     
     if (!studentListOutput?.students || studentListOutput.students.length === 0) {
-        return { error: "Could not extract any student data. Please ensure the student list file (CSV or XLSX) is correctly formatted with headers: 'name', 'hallTicketNumber', 'branch', 'contactNumber' and is not empty." };
+        return { error: "Could not extract any student data. Please ensure the student list file (PDF, CSV, or XLSX) is correctly formatted with headers: 'name', 'hallTicketNumber', 'branch', 'contactNumber' and is not empty." };
     }
     const students = studentListOutput.students;
 
@@ -112,21 +119,19 @@ Note that 'classroom' in the output schema corresponds to 'roomNo' from the avai
         return { error: "Failed to generate the seating arrangement. The AI model could not create a valid plan." };
     }
     
-    if (arrangementOutput.seatingPlan.length < students.length) {
-        return { error: `The generated plan is incomplete. Expected ${students.length} students, but only got ${arrangementOutput.seatingPlan.length}. Please try again.` };
+    if (arrangementOutput.seatingPlan.length !== students.length) {
+        return { error: `The generated plan is incomplete. The model only processed ${arrangementOutput.seatingPlan.length} out of ${students.length} students. Please check the uploaded file for formatting issues and try again.` };
     }
 
     // Dummy examConfig since it's not provided in the new flow
     const examConfig: ExamConfig = {
         startDate: new Date().toISOString(),
         endDate: new Date().toISOString(),
-        startTime: { hour: "00", minute: "00" },
-        endTime: { hour: "00", minute: "00" },
+        startTime: { hour: "09", minute: "00" },
+        endTime: { hour: "12", minute: "00" },
         useSamePlan: true,
     };
     
     return { seatingPlan: arrangementOutput.seatingPlan, examConfig: examConfig };
   }
 );
-
-    

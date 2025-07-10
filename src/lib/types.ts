@@ -13,7 +13,7 @@ export type Student = z.infer<typeof StudentSchema>;
 export const DynamicFloorSchema = z.object({
     name: z.string().min(1, "Floor name is required."),
     rooms: z.string().min(1, "Room numbers are required."),
-    benchesPerRoom: z.string().min(1, "Benches per room is required."),
+    benchesPerRoom: z.string().min(1, "Benches per room is required.").refine(val => !isNaN(parseInt(val, 10)), { message: "Benches must be a number."}),
 });
 
 export const DynamicBlockSchema = z.object({
@@ -61,7 +61,7 @@ export const GenerateSeatingArrangementInputSchema = z.object({
   studentListDoc: z
     .string()
     .describe(
-      "A CSV or XLSX file containing the list of students, as a data URI."
+      "A PDF, CSV, or XLSX file containing the list of students, as a data URI."
     ),
   seatingLayout: DynamicLayoutInputSchema,
 });
@@ -87,5 +87,3 @@ export const ValidateFacultyOutputSchema = z.object({
   error: z.string().optional().describe("An error message if validation fails for a specific reason, e.g., 'Secure key mismatch' or 'Faculty ID not found'."),
 });
 export type ValidateFacultyOutput = z.infer<typeof ValidateFacultyOutputSchema>;
-
-    

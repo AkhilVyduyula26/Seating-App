@@ -7,7 +7,7 @@
       "classroom": "2201",
       "contactNumber": "9876543210",
       "floor": "2nd",
-      "hallTicketNumber": "HT12345",
+      "hallTicketNumber": "12345",
       "name": "John Doe"
     },
     {
@@ -17,7 +17,7 @@
       "classroom": "2201",
       "contactNumber": "9876543211",
       "floor": "2nd",
-      "hallTicketNumber": "HT67890",
+      "hallTicketNumber": "67890",
       "name": "Jane Doe"
     },
     {
@@ -27,13 +27,13 @@
       "classroom": "2201",
       "contactNumber": "9876543212",
       "floor": "2nd",
-      "hallTicketNumber": "HT13579",
+      "hallTicketNumber": "13579",
       "name": "Peter Jones"
     }
   ],
   "examConfig": {
-    "startDate": "2025-07-10T12:16:56.007Z",
-    "endDate": "2025-07-10T12:16:56.007Z",
+    "startDate": "2025-07-10T17:25:52.842Z",
+    "endDate": "2025-07-10T17:25:52.842Z",
     "startTime": {
       "hour": "00",
       "minute": "00"
