@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -59,7 +59,9 @@ interface DisplaySeatingData {
 }
 
 export default function AdminDashboard() {
-  const [isPending, startTransition] = useTransition();
+  const [isGenerating, startGeneration] = useTransition();
+  const [isDeleting, startDeletion] = useTransition();
+  const [isLoading, startLoading] = useTransition();
   const [seatingData, setSeatingData] = useState<DisplaySeatingData | null>(null);
   const { toast } = useToast();
 
@@ -67,8 +69,8 @@ export default function AdminDashboard() {
     resolver: zodResolver(GenerationFormSchema),
   });
 
-  useState(() => {
-    startTransition(async () => {
+  useEffect(() => {
+    startLoading(async () => {
       const data = await getSeatingDataAction();
       if (data.plan && data.examConfig) {
         setSeatingData({
@@ -81,10 +83,10 @@ export default function AdminDashboard() {
         });
       }
     });
-  });
+  }, []);
 
   const onSubmit: SubmitHandler<GenerationFormType> = (data) => {
-    startTransition(async () => {
+    startGeneration(async () => {
       const studentFile = data.studentListDoc[0] as File;
       const studentListDataUri = await fileToDataUri(studentFile);
 
@@ -116,7 +118,7 @@ export default function AdminDashboard() {
   };
   
   const handleDelete = () => {
-    startTransition(async () => {
+    startDeletion(async () => {
         const result = await deleteSeatingDataAction();
         if (result.success) {
             setSeatingData(null);
@@ -135,7 +137,7 @@ export default function AdminDashboard() {
     });
   };
 
-  if (isPending && !seatingData) {
+  if (isLoading) {
     return (
         <div className="flex items-center justify-center p-8">
             <Loader2 className="h-8 w-8 animate-spin" />
@@ -159,8 +161,8 @@ export default function AdminDashboard() {
                 <SeatingTable data={seatingData.plan} />
             </CardContent>
             <CardFooter>
-                 <Button onClick={handleDelete} variant="destructive" disabled={isPending}>
-                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2" />}
+                 <Button onClick={handleDelete} variant="destructive" disabled={isDeleting}>
+                    {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2" />}
                     Delete Plan
                 </Button>
             </CardFooter>
@@ -206,9 +208,9 @@ export default function AdminDashboard() {
             <Button
               type="submit"
               className="w-full"
-              disabled={isPending}
+              disabled={isGenerating}
             >
-              {isPending ? (
+              {isGenerating ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Table className="mr-2 h-4 w-4" />
