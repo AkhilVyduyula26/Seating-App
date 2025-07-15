@@ -8,7 +8,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, StudentSchema, SeatingAssignmentSchema, ExamConfigSchema } from '@/lib/types';
+import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, StudentSchema, SeatingAssignmentSchema, ExamConfigSchema, Student, LayoutConfig } from '@/lib/types';
 
 
 export async function generateSeatingArrangement(
@@ -16,6 +16,16 @@ export async function generateSeatingArrangement(
 ): Promise<GenerateSeatingArrangementOutput> {
   return seatingArrangementFlow(input);
 }
+
+// Helper function to shuffle an array
+function shuffleArray<T>(array: T[]): T[] {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
 
 const seatingArrangementFlow = ai.defineFlow(
   {
@@ -25,7 +35,7 @@ const seatingArrangementFlow = ai.defineFlow(
   },
   async (input) => {
     
-    // Step 1: Parse the Student List Document (PDF)
+    // Step 1: Parse the Student List Document (PDF) using AI
     const { output: studentListOutput } = await ai.generate({
       prompt: `You are a data extraction specialist. Your task is to extract a list of all students from the provided PDF document. The document contains student records with the following columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber'.
 
@@ -47,61 +57,100 @@ The document is provided below. Process it and extract all students.`,
     if (!studentListOutput?.students || studentListOutput.students.length === 0) {
         return { error: "Could not extract any student data from the PDF. Please ensure the file is correctly formatted with columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber' and is not empty." };
     }
-    const students = studentListOutput.students;
-    const studentCount = students.length;
+    
+    const students: Student[] = studentListOutput.students;
 
-    // Step 2: Generate the seating arrangement and exam config by calling another prompt/flow
-    const { output: arrangementOutput } = await ai.generate({
-      prompt: `You are a seating arrangement coordinator for an exam. Your tasks are to assign students to unique seats based on a predefined layout and define the exam schedule.
-
-INPUTS:
-- **STUDENT_LIST**: A JSON list of students to be seated.
-- **STUDENT_COUNT**: The total number of students to seat.
-- **LAYOUT_CONFIG**: A JSON object describing the exact physical layout of the exam halls. This layout is provided by the administrator and MUST be strictly followed.
-
-TASKS:
-1.  **ASSIGN STUDENTS**: Assign every student from the STUDENT_LIST to a unique bench within the rooms specified in the LAYOUT_CONFIG. The assignment process should iterate through blocks, then floors, then rooms, assigning students to benches sequentially.
-2.  **CREATE EXAM CONFIG**: Use the start date, end date, and timings from the LAYOUT_CONFIG to define the exam schedule. The 'useSamePlan' flag should always be true.
-
-RULES:
-1.  **RANDOMIZE**: You MUST shuffle the student list randomly before making any assignments. This is critical for fairness.
-2.  **UNIQUE ASSIGNMENT**: Each student must be assigned to one and only one bench. No two students can have the same seat.
-3.  **ANTI-CHEATING (Strict)**: As you iterate through the shuffled student list, try your absolute best to avoid seating two students from the same 'branch' in adjacent seats within the same room.
-4.  **COMPLETE LIST**: The final 'seatingPlan' must include every single student from the 'STUDENT_LIST'. The length of the final 'seatingPlan' array must be exactly equal to STUDENT_COUNT.
-5.  **REAL DATA ONLY**: Do not generate, invent, or create any student data. Use only the students provided in the 'STUDENT_LIST'.
-6.  **ADHERE TO LAYOUT**: You must strictly follow the provided LAYOUT_CONFIG. Do not invent new rooms or exceed the number of benches specified for each room. The total capacity of the layout might be more than the number of students; just fill the seats needed.
-7.  **OUTPUT FORMAT**: The output must be a single JSON object with a 'seatingPlan' array and an 'examConfig' object.
-
-STUDENT_COUNT: ${studentCount}
-
-LAYOUT_CONFIG:
-\`\`\`json
-${JSON.stringify(input.layoutConfig, null, 2)}
-\`\`\`
-
-STUDENT_LIST (Randomize this list before assigning):
-\`\`\`json
-${JSON.stringify(students, null, 2)}
-\`\`\`
-
-Based on the rules and inputs, generate the complete seating plan and exam configuration.`,
-      output: {
-        schema: z.object({
-          seatingPlan: z.array(SeatingAssignmentSchema),
-          examConfig: ExamConfigSchema,
-        }),
-      },
-       model: 'googleai/gemini-1.5-flash-latest'
+    // Step 2: Procedurally generate the seating plan based on the layout config
+    const layout = input.layoutConfig;
+    
+    // Flatten the layout into a list of available seats
+    const availableSeats: Omit<SeatingAssignment, 'name' | 'hallTicketNumber' | 'branch' | 'contactNumber'>[] = [];
+    layout.blocks.forEach(block => {
+        block.floors.forEach(floor => {
+            floor.rooms.forEach(room => {
+                const totalBenches = room.benches * room.studentsPerBench;
+                for (let i = 1; i <= totalBenches; i++) {
+                    availableSeats.push({
+                        block: block.blockName,
+                        floor: String(floor.floorNumber),
+                        classroom: room.roomNumber,
+                        benchNumber: i
+                    });
+                }
+            });
+        });
     });
 
-    if (!arrangementOutput?.seatingPlan || !arrangementOutput.examConfig) {
-        return { error: "Failed to generate the seating arrangement or exam config. The AI model could not create a valid plan." };
+    if (students.length > availableSeats.length) {
+        return { error: `Not enough seats for all students. Required: ${students.length}, Available: ${availableSeats.length}. Please increase the layout capacity.` };
     }
     
-    if (arrangementOutput.seatingPlan.length !== students.length) {
-        return { error: `The generated plan is incomplete. The model only processed ${arrangementOutput.seatingPlan.length} out of ${students.length} students. Please check the uploaded file for formatting issues and try again.` };
+    // Shuffle students for random assignment
+    const shuffledStudents = shuffleArray(students);
+    
+    const seatingPlan: SeatingAssignment[] = [];
+    const assignedSeats: { [key: string]: SeatingAssignment } = {}; // To check for adjacent branches
+
+    for (let i = 0; i < shuffledStudents.length; i++) {
+        const student = shuffledStudents[i];
+        let assigned = false;
+
+        for (let j = 0; j < availableSeats.length; j++) {
+            const seat = availableSeats[j];
+            const seatKey = `${seat.block}-${seat.floor}-${seat.classroom}-${seat.benchNumber}`;
+            
+            // Check if seat is already taken
+            if (assignedSeats[seatKey]) continue;
+
+            // Anti-cheating logic: check adjacent seat
+            const prevSeatKey = `${seat.block}-${seat.floor}-${seat.classroom}-${seat.benchNumber - 1}`;
+            const prevSeatStudent = assignedSeats[prevSeatKey];
+            
+            if (prevSeatStudent && prevSeatStudent.branch === student.branch) {
+                // Try to find another seat if branch is same as adjacent
+                continue;
+            }
+
+            const assignment: SeatingAssignment = {
+                ...student,
+                ...seat
+            };
+            
+            seatingPlan.push(assignment);
+            assignedSeats[seatKey] = assignment; // Mark seat as taken
+            assigned = true;
+            break; // Move to the next student
+        }
+        if (!assigned) {
+           // This case should be rare if there's enough capacity and logic is sound
+           // Fallback: assign to the first available seat regardless of branch
+           for (let k = 0; k < availableSeats.length; k++) {
+               const fallbackSeat = availableSeats[k];
+               const fallbackSeatKey = `${fallbackSeat.block}-${fallbackSeat.floor}-${fallbackSeat.classroom}-${fallbackSeat.benchNumber}`;
+               if (!assignedSeats[fallbackSeatKey]) {
+                   const assignment: SeatingAssignment = { ...student, ...fallbackSeat };
+                   seatingPlan.push(assignment);
+                   assignedSeats[fallbackSeatKey] = assignment;
+                   break;
+               }
+           }
+        }
     }
     
-    return { seatingPlan: arrangementOutput.seatingPlan, examConfig: arrangementOutput.examConfig };
+    seatingPlan.sort((a,b) => a.hallTicketNumber.localeCompare(b.hallTicketNumber));
+
+    // Step 3: Create the exam configuration from the layout input
+    const [startHour, startMinute] = (layout.examTimings.split('to')[0].trim().match(/\d+/g) || ["09", "00"]);
+    const [endHour, endMinute] = (layout.examTimings.split('to')[1].trim().match(/\d+/g) || ["12", "00"]);
+
+    const examConfig: z.infer<typeof ExamConfigSchema> = {
+        startDate: layout.startDate,
+        endDate: layout.endDate,
+        startTime: { hour: startHour, minute: startMinute },
+        endTime: { hour: endHour, minute: endMinute },
+        useSamePlan: true,
+    };
+
+    return { seatingPlan, examConfig };
   }
 );
