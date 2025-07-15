@@ -89,7 +89,13 @@ export default function AdminDashboard() {
   const layoutForm = useForm<LayoutFormType>({
     resolver: zodResolver(LayoutFormSchema),
     defaultValues: {
+      seatingCapacity: '' as any,
+      blocks: '' as any,
+      floors: '' as any,
+      rooms: '' as any,
       roomNumbers: "",
+      benchesPerRoom: '' as any,
+      studentsPerBench: '' as any,
       examTimings: "09:00 AM to 12:00 PM",
     }
   });
