@@ -31,12 +31,30 @@ export const ExamConfigSchema = z.object({
 });
 export type ExamConfig = z.infer<typeof ExamConfigSchema>;
 
+export const LayoutConfigSchema = z.object({
+  seatingCapacity: z.number(),
+  blocks: z.number(),
+  floors: z.number(),
+  rooms: z.number(),
+  roomNumbers: z.string(),
+  benchesPerRoom: z.number(),
+  studentsPerBench: z.number(),
+  startDate: z.union([z.string(), z.date()]),
+  endDate: z.union([z.string(), z.date()]),
+  examTimings: z.string(),
+});
+export type LayoutConfig = z.infer<typeof LayoutConfigSchema>;
+
 export const GenerateSeatingArrangementInputSchema = z.object({
   studentListDoc: z
     .string()
     .describe(
       "A PDF file containing the list of students, as a data URI."
     ),
+  layoutConfig: LayoutConfigSchema.omit({ startDate: true, endDate: true }).extend({
+      startDate: z.string(),
+      endDate: z.string(),
+  })
 });
 export type GenerateSeatingArrangementInput = z.infer<typeof GenerateSeatingArrangementInputSchema>;
 

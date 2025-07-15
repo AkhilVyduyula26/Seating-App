@@ -31,9 +31,14 @@ import {
   Loader2,
   Table,
   Trash2,
+  CalendarIcon,
 } from "lucide-react";
 import { SeatingTable } from "./seating-table";
-import { ExamConfig, SeatingAssignment } from "@/lib/types";
+import { ExamConfig, SeatingAssignment, LayoutConfig } from "@/lib/types";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Calendar } from "./ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const fileToDataUri = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -42,6 +47,20 @@ const fileToDataUri = (file: File) =>
     reader.onerror = (error) => reject(error);
     reader.readAsDataURL(file);
   });
+
+const LayoutFormSchema = z.object({
+  seatingCapacity: z.coerce.number().min(1, "Seating capacity is required."),
+  blocks: z.coerce.number().min(1, "Number of blocks is required."),
+  floors: z.coerce.number().min(1, "Number of floors is required."),
+  rooms: z.coerce.number().min(1, "Number of rooms is required."),
+  roomNumbers: z.string().min(1, "Room numbers are required."),
+  benchesPerRoom: z.coerce.number().min(1, "Benches per room is required."),
+  studentsPerBench: z.coerce.number().min(1, "Students per bench is required."),
+  startDate: z.date({ required_error: "A start date is required." }),
+  endDate: z.date({ required_error: "An end date is required." }),
+  examTimings: z.string().min(1, "Exam timings are required."),
+});
+type LayoutFormType = z.infer<typeof LayoutFormSchema>;
 
 const GenerationFormSchema = z.object({
   studentListDoc: z
@@ -59,13 +78,23 @@ interface DisplaySeatingData {
 }
 
 export default function AdminDashboard() {
+  const [step, setStep] = useState(1);
+  const [layoutConfig, setLayoutConfig] = useState<LayoutFormType | null>(null);
   const [isGenerating, startGeneration] = useTransition();
   const [isDeleting, startDeletion] = useTransition();
   const [isLoading, startLoading] = useTransition();
   const [seatingData, setSeatingData] = useState<DisplaySeatingData | null>(null);
   const { toast } = useToast();
 
-  const form = useForm<GenerationFormType>({
+  const layoutForm = useForm<LayoutFormType>({
+    resolver: zodResolver(LayoutFormSchema),
+    defaultValues: {
+      roomNumbers: "",
+      examTimings: "09:00 AM to 12:00 PM",
+    }
+  });
+  
+  const generationForm = useForm<GenerationFormType>({
     resolver: zodResolver(GenerationFormSchema),
   });
 
@@ -84,14 +113,25 @@ export default function AdminDashboard() {
       }
     });
   }, []);
+  
+  const handleLayoutSubmit: SubmitHandler<LayoutFormType> = (data) => {
+    setLayoutConfig(data);
+    setStep(2);
+  };
 
-  const onSubmit: SubmitHandler<GenerationFormType> = (data) => {
+  const handleGenerationSubmit: SubmitHandler<GenerationFormType> = (data) => {
     startGeneration(async () => {
+      if (!layoutConfig) {
+        toast({ variant: "destructive", title: "Error", description: "Layout configuration is missing." });
+        return;
+      }
+      
       const studentFile = data.studentListDoc[0] as File;
       const studentListDataUri = await fileToDataUri(studentFile);
 
       const result = await createSeatingPlanAction(
         studentListDataUri,
+        layoutConfig
       );
 
       if (result.success && result.plan && result.examConfig) {
@@ -122,7 +162,10 @@ export default function AdminDashboard() {
         const result = await deleteSeatingDataAction();
         if (result.success) {
             setSeatingData(null);
-            form.reset();
+            setStep(1);
+            setLayoutConfig(null);
+            layoutForm.reset();
+            generationForm.reset();
             toast({
                 title: 'Plan Deleted',
                 description: 'The seating plan has been cleared.',
@@ -170,56 +213,180 @@ export default function AdminDashboard() {
     );
   }
 
-  return (
-    <Card className="w-full max-w-lg mx-auto shadow-lg">
-      <CardHeader>
-        <CardTitle>Generate Seating Plan</CardTitle>
-        <CardDescription>
-          Upload the student list in PDF format. The system will automatically
-          determine capacity and generate the seating arrangement.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="studentListDoc"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2">
-                    <FileUp /> Student List File (PDF)
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      type="file"
-                      accept=".pdf"
-                      onChange={(e) => field.onChange(e.target.files)}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Ensure the PDF has headers: name, hallTicketNumber, branch,
-                    contactNumber.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isGenerating}
-            >
-              {isGenerating ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Table className="mr-2 h-4 w-4" />
-              )}
-              Generate Seating Plan
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
-  );
+  if (step === 1) {
+    return (
+      <Card className="w-full max-w-2xl mx-auto shadow-lg">
+        <CardHeader>
+          <CardTitle>Seating Setup - Step 1: Layout Configuration</CardTitle>
+          <CardDescription>
+            Define the physical layout of your examination halls.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...layoutForm}>
+            <form onSubmit={layoutForm.handleSubmit(handleLayoutSubmit)} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField control={layoutForm.control} name="seatingCapacity" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Seating Capacity</FormLabel>
+                        <FormControl><Input type="number" placeholder="e.g., 150" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )} />
+                <FormField control={layoutForm.control} name="blocks" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Number of Blocks</FormLabel>
+                        <FormControl><Input type="number" placeholder="e.g., 2" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )} />
+                <FormField control={layoutForm.control} name="floors" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Number of Floors</FormLabel>
+                        <FormControl><Input type="number" placeholder="e.g., 3" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )} />
+                <FormField control={layoutForm.control} name="rooms" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Number of Rooms</FormLabel>
+                        <FormControl><Input type="number" placeholder="e.g., 10" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )} />
+                <FormField control={layoutForm.control} name="roomNumbers" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Room Numbers (comma-separated)</FormLabel>
+                        <FormControl><Input placeholder="e.g., 101,102,201" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )} />
+                <FormField control={layoutForm.control} name="benchesPerRoom" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Benches per Room</FormLabel>
+                        <FormControl><Input type="number" placeholder="e.g., 15" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )} />
+                <FormField control={layoutForm.control} name="studentsPerBench" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Students per Bench</FormLabel>
+                        <FormControl><Input type="number" placeholder="e.g., 1" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )} />
+                <FormField control={layoutForm.control} name="examTimings" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Exam Timings</FormLabel>
+                        <FormControl><Input placeholder="e.g., 09:00 AM to 12:00 PM" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )} />
+                <FormField control={layoutForm.control} name="startDate" render={({ field }) => (
+                  <FormItem className="flex flex-col pt-2">
+                    <FormLabel>Exam Start Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                            {field.value ? (format(field.value, "PPP")) : (<span>Pick a date</span>)}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/>
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}/>
+                <FormField control={layoutForm.control} name="endDate" render={({ field }) => (
+                  <FormItem className="flex flex-col pt-2">
+                    <FormLabel>Exam End Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                            {field.value ? (format(field.value, "PPP")) : (<span>Pick a date</span>)}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/>
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}/>
+              </div>
+              <Button type="submit" className="w-full">
+                Continue to Step 2
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    )
+  }
+  
+  if (step === 2) {
+    return (
+      <Card className="w-full max-w-lg mx-auto shadow-lg">
+        <CardHeader>
+          <CardTitle>Seating Setup - Step 2: Upload Student List</CardTitle>
+          <CardDescription>
+            Upload the student list in PDF format. The system will use the layout from Step 1 to generate the seating arrangement.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...generationForm}>
+            <form onSubmit={generationForm.handleSubmit(handleGenerationSubmit)} className="space-y-6">
+              <FormField
+                control={generationForm.control}
+                name="studentListDoc"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <FileUp /> Student List File (PDF)
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="file"
+                        accept=".pdf"
+                        onChange={(e) => field.onChange(e.target.files)}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Ensure the PDF has headers: name, hallTicketNumber, branch,
+                      contactNumber.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setStep(1)} className="w-1/3">Back to Step 1</Button>
+                <Button
+                  type="submit"
+                  className="w-2/3"
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Table className="mr-2 h-4 w-4" />
+                  )}
+                  Generate Seating Plan
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return null;
 }

@@ -7,17 +7,25 @@ import {
   generateSeatingArrangement,
 } from "@/ai/flows/seat-arrangement-flow";
 import { validateFaculty } from "@/ai/flows/validate-faculty-flow";
-import type { GenerateSeatingArrangementInput, ValidateFacultyInput, ExamConfig } from '@/lib/types';
+import type { GenerateSeatingArrangementInput, ValidateFacultyInput, ExamConfig, LayoutConfig } from '@/lib/types';
+import { format } from "date-fns";
 
 const seatingPlanPath = path.resolve(process.cwd(), ".data/seating-plan.json");
 const facultyAuthPath = path.resolve(process.cwd(), ".data/faculty-auth.json");
 
 export async function createSeatingPlanAction(
   studentListDocDataUri: string,
+  layoutConfig: LayoutConfig,
 ) {
   try {
     const input: GenerateSeatingArrangementInput = {
       studentListDoc: studentListDocDataUri,
+      layoutConfig: {
+        ...layoutConfig,
+        // Dates are converted to string for serialization
+        startDate: format(layoutConfig.startDate, 'yyyy-MM-dd'),
+        endDate: format(layoutConfig.endDate, 'yyyy-MM-dd'),
+      },
     };
     
     const result = await generateSeatingArrangement(input);

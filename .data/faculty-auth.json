@@ -1,7 +1,7 @@
 {
   "authorized_faculty": [
     { "name": "Ramesh", "faculty_id": "MRUE2109T029" },
-    { "name": "Sravani", "faculty_id": "MRUE2109T045" },
+    { "name": "Sravan", "faculty_id": "MRUE2109T045" },
     { "name": "Naveen", "faculty_id": "MRUE2109T052" },
     { "name": "Sunitha", "faculty_id": "MRUE2109T061" }
   ],
