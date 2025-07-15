@@ -57,19 +57,19 @@ The document is provided below. Process it and extract all students.`,
 INPUTS:
 - **STUDENT_LIST**: A JSON list of students to be seated.
 - **STUDENT_COUNT**: The total number of students to seat.
-- **LAYOUT_CONFIG**: A JSON object describing the exact physical layout of the exam halls.
+- **LAYOUT_CONFIG**: A JSON object describing the exact physical layout of the exam halls. This layout is provided by the administrator and MUST be strictly followed.
 
 TASKS:
-1.  **ASSIGN STUDENTS**: Assign every student from the STUDENT_LIST to a unique bench within the rooms specified in the LAYOUT_CONFIG.
+1.  **ASSIGN STUDENTS**: Assign every student from the STUDENT_LIST to a unique bench within the rooms specified in the LAYOUT_CONFIG. The assignment process should iterate through blocks, then floors, then rooms, assigning students to benches sequentially.
 2.  **CREATE EXAM CONFIG**: Use the start date, end date, and timings from the LAYOUT_CONFIG to define the exam schedule. The 'useSamePlan' flag should always be true.
 
 RULES:
 1.  **RANDOMIZE**: You MUST shuffle the student list randomly before making any assignments. This is critical for fairness.
 2.  **UNIQUE ASSIGNMENT**: Each student must be assigned to one and only one bench. No two students can have the same seat.
-3.  **ANTI-CHEATING (Strict)**: You MUST try your absolute best to avoid seating two students from the same 'branch' in the same room. This is a high-priority rule.
+3.  **ANTI-CHEATING (Strict)**: As you iterate through the shuffled student list, try your absolute best to avoid seating two students from the same 'branch' in adjacent seats within the same room.
 4.  **COMPLETE LIST**: The final 'seatingPlan' must include every single student from the 'STUDENT_LIST'. The length of the final 'seatingPlan' array must be exactly equal to STUDENT_COUNT.
 5.  **REAL DATA ONLY**: Do not generate, invent, or create any student data. Use only the students provided in the 'STUDENT_LIST'.
-6.  **ADHERE TO LAYOUT**: You must strictly follow the provided LAYOUT_CONFIG. Do not invent new rooms or exceed the number of benches specified for each room.
+6.  **ADHERE TO LAYOUT**: You must strictly follow the provided LAYOUT_CONFIG. Do not invent new rooms or exceed the number of benches specified for each room. The total capacity of the layout might be more than the number of students; just fill the seats needed.
 7.  **OUTPUT FORMAT**: The output must be a single JSON object with a 'seatingPlan' array and an 'examConfig' object.
 
 STUDENT_COUNT: ${studentCount}

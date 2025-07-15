@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
-import { useForm, type SubmitHandler } from "react-hook-form";
+import { useState, useTransition } from "react";
+import { useForm, useFieldArray, type SubmitHandler, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -32,13 +32,18 @@ import {
   Table,
   Trash2,
   CalendarIcon,
+  PlusCircle,
+  X,
 } from "lucide-react";
 import { SeatingTable } from "./seating-table";
-import { ExamConfig, SeatingAssignment, LayoutConfig } from "@/lib/types";
+import { ExamConfig, SeatingAssignment, LayoutConfig, BlockSchema, LayoutFormSchema } from "@/lib/types";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useEffect } from "react";
+import { Separator } from "./ui/separator";
+
 
 const fileToDataUri = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -48,18 +53,6 @@ const fileToDataUri = (file: File) =>
     reader.readAsDataURL(file);
   });
 
-const LayoutFormSchema = z.object({
-  seatingCapacity: z.coerce.number().min(1, "Seating capacity is required."),
-  blocks: z.coerce.number().min(1, "Number of blocks is required."),
-  floors: z.coerce.number().min(1, "Number of floors is required."),
-  rooms: z.coerce.number().min(1, "Number of rooms is required."),
-  roomNumbers: z.string().min(1, "Room numbers are required."),
-  benchesPerRoom: z.coerce.number().min(1, "Benches per room is required."),
-  studentsPerBench: z.coerce.number().min(1, "Students per bench is required."),
-  startDate: z.date({ required_error: "A start date is required." }),
-  endDate: z.date({ required_error: "An end date is required." }),
-  examTimings: z.string().min(1, "Exam timings are required."),
-});
 type LayoutFormType = z.infer<typeof LayoutFormSchema>;
 
 const GenerationFormSchema = z.object({
@@ -89,17 +82,17 @@ export default function AdminDashboard() {
   const layoutForm = useForm<LayoutFormType>({
     resolver: zodResolver(LayoutFormSchema),
     defaultValues: {
-      seatingCapacity: '' as any,
-      blocks: '' as any,
-      floors: '' as any,
-      rooms: '' as any,
-      roomNumbers: "",
-      benchesPerRoom: '' as any,
-      studentsPerBench: '' as any,
-      examTimings: "09:00 AM to 12:00 PM",
+      blocks: [{ blockName: "Main Block", floors: [{ floorNumber: 1, rooms: [{ roomNumber: "101", benches: 15, studentsPerBench: 1 }] }] }],
+      startDate: new Date(),
+      examTimings: "09:00 AM to 12:00 PM"
     }
   });
-  
+
+  const { fields: blockFields, append: appendBlock, remove: removeBlock } = useFieldArray({
+    control: layoutForm.control,
+    name: "blocks"
+  });
+
   const generationForm = useForm<GenerationFormType>({
     resolver: zodResolver(GenerationFormSchema),
   });
@@ -119,7 +112,7 @@ export default function AdminDashboard() {
       }
     });
   }, []);
-  
+
   const handleLayoutSubmit: SubmitHandler<LayoutFormType> = (data) => {
     setLayoutConfig(data);
     setStep(2);
@@ -131,7 +124,7 @@ export default function AdminDashboard() {
         toast({ variant: "destructive", title: "Error", description: "Layout configuration is missing." });
         return;
       }
-      
+
       const studentFile = data.studentListDoc[0] as File;
       const studentListDataUri = await fileToDataUri(studentFile);
 
@@ -162,7 +155,7 @@ export default function AdminDashboard() {
       }
     });
   };
-  
+
   const handleDelete = () => {
     startDeletion(async () => {
         const result = await deleteSeatingDataAction();
@@ -221,74 +214,54 @@ export default function AdminDashboard() {
 
   if (step === 1) {
     return (
-      <Card className="w-full max-w-2xl mx-auto shadow-lg">
+      <Card className="w-full max-w-4xl mx-auto shadow-lg">
         <CardHeader>
           <CardTitle>Seating Setup - Step 1: Layout Configuration</CardTitle>
           <CardDescription>
-            Define the physical layout of your examination halls.
+            Define the physical layout of your examination halls by adding blocks, floors, and rooms.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...layoutForm}>
-            <form onSubmit={layoutForm.handleSubmit(handleLayoutSubmit)} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={layoutForm.control} name="seatingCapacity" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Seating Capacity</FormLabel>
-                        <FormControl><Input type="number" placeholder="e.g., 150" {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-                <FormField control={layoutForm.control} name="blocks" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Number of Blocks</FormLabel>
-                        <FormControl><Input type="number" placeholder="e.g., 2" {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-                <FormField control={layoutForm.control} name="floors" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Number of Floors</FormLabel>
-                        <FormControl><Input type="number" placeholder="e.g., 3" {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-                <FormField control={layoutForm.control} name="rooms" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Number of Rooms</FormLabel>
-                        <FormControl><Input type="number" placeholder="e.g., 10" {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-                <FormField control={layoutForm.control} name="roomNumbers" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Room Numbers (comma-separated)</FormLabel>
-                        <FormControl><Input placeholder="e.g., 101,102,201" {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-                <FormField control={layoutForm.control} name="benchesPerRoom" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Benches per Room</FormLabel>
-                        <FormControl><Input type="number" placeholder="e.g., 15" {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-                <FormField control={layoutForm.control} name="studentsPerBench" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Students per Bench</FormLabel>
-                        <FormControl><Input type="number" placeholder="e.g., 1" {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-                <FormField control={layoutForm.control} name="examTimings" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Exam Timings</FormLabel>
-                        <FormControl><Input placeholder="e.g., 09:00 AM to 12:00 PM" {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-                <FormField control={layoutForm.control} name="startDate" render={({ field }) => (
+            <form onSubmit={layoutForm.handleSubmit(handleLayoutSubmit)} className="space-y-6">
+              {blockFields.map((block, blockIndex) => (
+                <Card key={block.id} className="p-4 border-dashed relative">
+                   <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={() => removeBlock(blockIndex)}>
+                        <X className="h-4 w-4"/>
+                    </Button>
+                  <CardHeader className="p-2">
+                    <CardTitle className="text-lg">Block {blockIndex + 1}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-2 space-y-4">
+                    <FormField
+                      control={layoutForm.control}
+                      name={`blocks.${blockIndex}.blockName`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Block Name</FormLabel>
+                          <FormControl><Input placeholder="e.g., Main Block" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FloorsField blockIndex={blockIndex} control={layoutForm.control} register={layoutForm.register} getValues={layoutForm.getValues} setValue={layoutForm.setValue} />
+                  </CardContent>
+                </Card>
+              ))}
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => appendBlock({ blockName: "", floors: [{ floorNumber: 1, rooms: [] }] })}
+                className="flex items-center gap-2"
+              >
+                <PlusCircle /> Add Another Block
+              </Button>
+
+              <Separator />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                 <FormField control={layoutForm.control} name="startDate" render={({ field }) => (
                   <FormItem className="flex flex-col pt-2">
                     <FormLabel>Exam Start Date</FormLabel>
                     <Popover>
@@ -326,7 +299,15 @@ export default function AdminDashboard() {
                     <FormMessage />
                   </FormItem>
                 )}/>
+                 <FormField control={layoutForm.control} name="examTimings" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Exam Timings</FormLabel>
+                        <FormControl><Input placeholder="e.g., 09:00 AM to 12:00 PM" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )} />
               </div>
+
               <Button type="submit" className="w-full">
                 Continue to Step 2
               </Button>
@@ -336,7 +317,7 @@ export default function AdminDashboard() {
       </Card>
     )
   }
-  
+
   if (step === 2) {
     return (
       <Card className="w-full max-w-lg mx-auto shadow-lg">
@@ -395,4 +376,115 @@ export default function AdminDashboard() {
   }
 
   return null;
+}
+
+const FloorsField = ({ blockIndex, control, register, getValues, setValue }: { blockIndex: number, control: any, register: any, getValues: any, setValue: any }) => {
+    const { fields, append, remove } = useFieldArray({
+        control,
+        name: `blocks.${blockIndex}.floors`
+    });
+
+    return (
+        <div className="space-y-4 pl-4 border-l-2">
+            {fields.map((floor, floorIndex) => (
+                <Card key={floor.id} className="p-3 bg-muted/40 relative">
+                     <Button type="button" variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => remove(floorIndex)}>
+                        <X className="h-4 w-4"/>
+                    </Button>
+                    <CardContent className="p-1 space-y-4">
+                        <FormField
+                            control={control}
+                            name={`blocks.${blockIndex}.floors.${floorIndex}.floorNumber`}
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Floor Number</FormLabel>
+                                    <FormControl><Input type="number" placeholder="e.g., 1" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <RoomsField blockIndex={blockIndex} floorIndex={floorIndex} control={control} register={register} getValues={getValues} setValue={setValue} />
+                    </CardContent>
+                </Card>
+            ))}
+            <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => append({ floorNumber: fields.length + 1, rooms: [{ roomNumber: "", benches: 10, studentsPerBench: 1}] })}
+                className="flex items-center gap-2"
+            >
+                <PlusCircle /> Add Floor
+            </Button>
+        </div>
+    );
+};
+
+const RoomsField = ({ blockIndex, floorIndex, control, register, getValues, setValue }: { blockIndex: number, floorIndex: number, control: any, register: any, getValues: any, setValue: any }) => {
+    const { fields, append, remove } = useFieldArray({
+        control,
+        name: `blocks.${blockIndex}.floors.${floorIndex}.rooms`
+    });
+    
+    const watchRoomFields = getValues(`blocks.${blockIndex}.floors.${floorIndex}.rooms`);
+
+    return (
+        <div className="space-y-3 pl-4">
+            <h4 className="text-sm font-medium">Rooms</h4>
+            {fields.map((room, roomIndex) => (
+                <div key={room.id} className="p-3 rounded-md bg-background border grid grid-cols-1 md:grid-cols-4 gap-3 relative">
+                     <Button type="button" variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={() => remove(roomIndex)}>
+                        <X className="h-4 w-4"/>
+                    </Button>
+                    <FormField
+                        control={control}
+                        name={`blocks.${blockIndex}.floors.${floorIndex}.rooms.${roomIndex}.roomNumber`}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="text-xs">Room No.</FormLabel>
+                                <FormControl><Input placeholder="101" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={control}
+                        name={`blocks.${blockIndex}.floors.${floorIndex}.rooms.${roomIndex}.benches`}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="text-xs"># Benches</FormLabel>
+                                <FormControl><Input type="number" placeholder="15" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={control}
+                        name={`blocks.${blockIndex}.floors.${floorIndex}.rooms.${roomIndex}.studentsPerBench`}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="text-xs">Students/Bench</FormLabel>
+                                <FormControl><Input type="number" placeholder="1" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)}/></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <div className="flex items-end">
+                        <p className="text-xs text-muted-foreground">
+                            Capacity: {(watchRoomFields?.[roomIndex]?.benches || 0) * (watchRoomFields?.[roomIndex]?.studentsPerBench || 0)}
+                        </p>
+                    </div>
+                </div>
+            ))}
+             <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => append({ roomNumber: "", benches: 10, studentsPerBench: 1})}
+                className="flex items-center gap-2"
+            >
+                <PlusCircle /> Add Room
+            </Button>
+        </div>
+    );
 }

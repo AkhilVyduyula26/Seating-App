@@ -31,19 +31,33 @@ export const ExamConfigSchema = z.object({
 });
 export type ExamConfig = z.infer<typeof ExamConfigSchema>;
 
-export const LayoutConfigSchema = z.object({
-  seatingCapacity: z.number(),
-  blocks: z.number(),
-  floors: z.number(),
-  rooms: z.number(),
-  roomNumbers: z.string(),
-  benchesPerRoom: z.number(),
-  studentsPerBench: z.number(),
-  startDate: z.union([z.string(), z.date()]),
-  endDate: z.union([z.string(), z.date()]),
-  examTimings: z.string(),
+export const RoomSchema = z.object({
+  roomNumber: z.string().min(1, 'Room number is required'),
+  benches: z.coerce.number().min(1, 'Number of benches must be at least 1'),
+  studentsPerBench: z.coerce.number().min(1, 'Students per bench must be at least 1'),
 });
-export type LayoutConfig = z.infer<typeof LayoutConfigSchema>;
+export type Room = z.infer<typeof RoomSchema>;
+
+export const FloorSchema = z.object({
+  floorNumber: z.coerce.number(),
+  rooms: z.array(RoomSchema).min(1, 'You must add at least one room to a floor.'),
+});
+export type Floor = z.infer<typeof FloorSchema>;
+
+export const BlockSchema = z.object({
+  blockName: z.string().min(1, 'Block name is required'),
+  floors: z.array(FloorSchema).min(1, 'You must add at least one floor to a block.'),
+});
+export type Block = z.infer<typeof BlockSchema>;
+
+
+export const LayoutFormSchema = z.object({
+  blocks: z.array(BlockSchema).min(1, 'You must define at least one block.'),
+  startDate: z.date({ required_error: "A start date is required." }),
+  endDate: z.date({ required_error: "An end date is required." }),
+  examTimings: z.string().min(1, "Exam timings are required."),
+});
+export type LayoutConfig = z.infer<typeof LayoutFormSchema>;
 
 export const GenerateSeatingArrangementInputSchema = z.object({
   studentListDoc: z
@@ -51,7 +65,7 @@ export const GenerateSeatingArrangementInputSchema = z.object({
     .describe(
       "A PDF file containing the list of students, as a data URI."
     ),
-  layoutConfig: LayoutConfigSchema.omit({ startDate: true, endDate: true }).extend({
+  layoutConfig: LayoutFormSchema.omit({ startDate: true, endDate: true }).extend({
       startDate: z.string(),
       endDate: z.string(),
   })
