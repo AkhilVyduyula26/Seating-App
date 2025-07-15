@@ -71,9 +71,9 @@ The document is provided below. Process it and extract all students.`,
                 const totalBenches = room.benches * room.studentsPerBench;
                 for (let i = 1; i <= totalBenches; i++) {
                     availableSeats.push({
-                        block: block.blockName,
-                        floor: String(floor.floorNumber),
-                        classroom: room.roomNumber,
+                        block: block.name,
+                        floor: String(floor.number),
+                        classroom: room.number,
                         benchNumber: i
                     });
                 }

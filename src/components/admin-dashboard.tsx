@@ -82,7 +82,7 @@ export default function AdminDashboard() {
   const layoutForm = useForm<LayoutFormType>({
     resolver: zodResolver(LayoutFormSchema),
     defaultValues: {
-      blocks: [{ blockName: "Main Block", floors: [{ floorNumber: 1, rooms: [{ roomNumber: "101", benches: 15, studentsPerBench: 1 }] }] }],
+      blocks: [{ name: "Main Block", floors: [{ number: 1, rooms: [{ number: "101", benches: 15, studentsPerBench: 1 }] }] }],
       startDate: new Date(),
       examTimings: "09:00 AM to 12:00 PM"
     }
@@ -235,7 +235,7 @@ export default function AdminDashboard() {
                   <CardContent className="p-2 space-y-4">
                     <FormField
                       control={layoutForm.control}
-                      name={`blocks.${blockIndex}.blockName`}
+                      name={`blocks.${blockIndex}.name`}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Block Name</FormLabel>
@@ -252,7 +252,7 @@ export default function AdminDashboard() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => appendBlock({ blockName: "", floors: [{ floorNumber: 1, rooms: [] }] })}
+                onClick={() => appendBlock({ name: "", floors: [{ number: 1, rooms: [] }] })}
                 className="flex items-center gap-2"
               >
                 <PlusCircle /> Add Another Block
@@ -394,7 +394,7 @@ const FloorsField = ({ blockIndex, control, register, getValues, setValue }: { b
                     <CardContent className="p-1 space-y-4">
                         <FormField
                             control={control}
-                            name={`blocks.${blockIndex}.floors.${floorIndex}.floorNumber`}
+                            name={`blocks.${blockIndex}.floors.${floorIndex}.number`}
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Floor Number</FormLabel>
@@ -411,7 +411,7 @@ const FloorsField = ({ blockIndex, control, register, getValues, setValue }: { b
                 type="button"
                 variant="secondary"
                 size="sm"
-                onClick={() => append({ floorNumber: fields.length + 1, rooms: [{ roomNumber: "", benches: 10, studentsPerBench: 1}] })}
+                onClick={() => append({ number: fields.length + 1, rooms: [{ number: "", benches: 10, studentsPerBench: 1}] })}
                 className="flex items-center gap-2"
             >
                 <PlusCircle /> Add Floor
@@ -438,7 +438,7 @@ const RoomsField = ({ blockIndex, floorIndex, control, register, getValues, setV
                     </Button>
                     <FormField
                         control={control}
-                        name={`blocks.${blockIndex}.floors.${floorIndex}.rooms.${roomIndex}.roomNumber`}
+                        name={`blocks.${blockIndex}.floors.${floorIndex}.rooms.${roomIndex}.number`}
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel className="text-xs">Room No.</FormLabel>
@@ -480,7 +480,7 @@ const RoomsField = ({ blockIndex, floorIndex, control, register, getValues, setV
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => append({ roomNumber: "", benches: 10, studentsPerBench: 1})}
+                onClick={() => append({ number: "", benches: 10, studentsPerBench: 1})}
                 className="flex items-center gap-2"
             >
                 <PlusCircle /> Add Room
