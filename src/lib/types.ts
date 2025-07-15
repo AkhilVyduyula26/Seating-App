@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 
 export const StudentSchema = z.object({
@@ -54,16 +53,16 @@ export type Block = z.infer<typeof BlockSchema>;
 export const LayoutFormSchema = z.object({
   blocks: z.array(BlockSchema).min(1, 'You must define at least one block.'),
   startDate: z.date({ required_error: "A start date is required." }),
-  endDate: z.date().optional(),
+  endDate: z.date({ required_error: "An end date is required." }),
   examTimings: z.string().min(1, "Exam timings are required."),
 });
 export type LayoutConfig = z.infer<typeof LayoutFormSchema>;
 
 export const GenerateSeatingArrangementInputSchema = z.object({
-  studentListDoc: z
+  studentListCsv: z
     .string()
     .describe(
-      "A PDF file containing the list of students, as a data URI."
+      "A CSV file content as a string, containing the list of students."
     ),
   layoutConfig: LayoutFormSchema.omit({ startDate: true, endDate: true }).extend({
       startDate: z.string(),

@@ -1,21 +1,15 @@
-
 'use server';
 /**
- * @fileOverview This flow handles parsing a student PDF and generating a seating arrangement automatically.
+ * @fileOverview This flow handles parsing a student CSV and generating a seating arrangement automatically.
  * 
  * - generateSeatingArrangement - A function that orchestrates the document parsing and seat assignment.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, StudentSchema, SeatingAssignmentSchema, ExamConfigSchema, Student, LayoutConfig } from '@/lib/types';
+import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, SeatingAssignment, ExamConfigSchema, Student } from '@/lib/types';
+import Papa from 'papaparse';
 
-
-export async function generateSeatingArrangement(
-  input: GenerateSeatingArrangementInput
-): Promise<GenerateSeatingArrangementOutput> {
-  return seatingArrangementFlow(input);
-}
 
 // Helper function to shuffle an array
 function shuffleArray<T>(array: T[]): T[] {
@@ -24,6 +18,42 @@ function shuffleArray<T>(array: T[]): T[] {
         [array[i], array[j]] = [array[j], array[i]];
     }
     return array;
+}
+
+async function parseStudentsFromCSV(csvData: string): Promise<Student[]> {
+    return new Promise((resolve, reject) => {
+        Papa.parse(csvData, {
+            header: true,
+            skipEmptyLines: true,
+            transformHeader: header => header.trim(),
+            complete: (results) => {
+                 if (results.errors.length) {
+                    console.error("CSV Parsing Errors:", results.errors);
+                    return reject(new Error("Failed to parse CSV file. Please check the format."));
+                }
+                
+                const requiredFields = ['name', 'hallTicketNumber', 'branch', 'contactNumber'];
+                const headers = results.meta.fields;
+
+                if(!headers || !requiredFields.every(field => headers.includes(field))) {
+                    return reject(new Error(`CSV must contain the headers: ${requiredFields.join(', ')}`));
+                }
+
+                // @ts-ignore
+                const students: Student[] = results.data.map(row => ({
+                    name: row.name || '',
+                    hallTicketNumber: row.hallTicketNumber || '',
+                    branch: row.branch || '',
+                    contactNumber: row.contactNumber || '',
+                })).filter(s => s.name && s.hallTicketNumber);
+                
+                resolve(students);
+            },
+            error: (error: Error) => {
+                reject(error);
+            }
+        });
+    });
 }
 
 
@@ -35,31 +65,18 @@ const seatingArrangementFlow = ai.defineFlow(
   },
   async (input) => {
     
-    // Step 1: Parse the Student List Document (PDF) using AI
-    const { output: studentListOutput } = await ai.generate({
-      prompt: `You are a data extraction specialist. Your task is to extract a list of all students from the provided PDF document. The document contains student records with the following columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber'.
-
-RULES:
-1.  **EXTRACT ALL RECORDS**: You MUST extract every single student record from the document. Do not skip any rows or stop prematurely.
-2.  **NO FAKE DATA**: Do NOT generate, invent, or create any student data. Use ONLY the data present in the document.
-3.  **STRICT FORMAT**: Return the data as a single JSON object with a single key 'students', which is an array of student objects.
-
-The document is provided below. Process it and extract all students.`,
-      context: [{ document: { data: input.studentListDoc, contentType: "application/pdf" } }],
-      output: {
-        schema: z.object({
-          students: z.array(StudentSchema),
-        }),
-      },
-      model: 'googleai/gemini-1.5-flash-latest'
-    });
-    
-    if (!studentListOutput?.students || studentListOutput.students.length === 0) {
-        return { error: "Could not extract any student data from the PDF. Please ensure the file is correctly formatted with columns: 'name', 'hallTicketNumber', 'branch', 'contactNumber' and is not empty." };
+    // Step 1: Parse the Student List CSV
+    let students: Student[];
+    try {
+        students = await parseStudentsFromCSV(input.studentListCsv);
+    } catch(e: any) {
+        return { error: e.message || "Failed to parse student CSV."};
     }
     
-    const students: Student[] = studentListOutput.students;
-
+    if (!students || students.length === 0) {
+        return { error: "Could not extract any student data from the CSV. Please ensure the file is correctly formatted and not empty." };
+    }
+    
     // Step 2: Procedurally generate the seating plan based on the layout config
     const layout = input.layoutConfig;
     
@@ -68,8 +85,8 @@ The document is provided below. Process it and extract all students.`,
     layout.blocks.forEach(block => {
         block.floors.forEach(floor => {
             floor.rooms.forEach(room => {
-                const totalBenches = room.benches * room.studentsPerBench;
-                for (let i = 1; i <= totalBenches; i++) {
+                const totalSeats = room.benches * room.studentsPerBench;
+                for (let i = 1; i <= totalSeats; i++) {
                     availableSeats.push({
                         block: block.name,
                         floor: String(floor.number),
@@ -93,48 +110,13 @@ The document is provided below. Process it and extract all students.`,
 
     for (let i = 0; i < shuffledStudents.length; i++) {
         const student = shuffledStudents[i];
-        let assigned = false;
-
-        for (let j = 0; j < availableSeats.length; j++) {
-            const seat = availableSeats[j];
-            const seatKey = `${seat.block}-${seat.floor}-${seat.classroom}-${seat.benchNumber}`;
-            
-            // Check if seat is already taken
-            if (assignedSeats[seatKey]) continue;
-
-            // Anti-cheating logic: check adjacent seat
-            const prevSeatKey = `${seat.block}-${seat.floor}-${seat.classroom}-${seat.benchNumber - 1}`;
-            const prevSeatStudent = assignedSeats[prevSeatKey];
-            
-            if (prevSeatStudent && prevSeatStudent.branch === student.branch) {
-                // Try to find another seat if branch is same as adjacent
-                continue;
-            }
-
-            const assignment: SeatingAssignment = {
-                ...student,
-                ...seat
-            };
-            
-            seatingPlan.push(assignment);
-            assignedSeats[seatKey] = assignment; // Mark seat as taken
-            assigned = true;
-            break; // Move to the next student
-        }
-        if (!assigned) {
-           // This case should be rare if there's enough capacity and logic is sound
-           // Fallback: assign to the first available seat regardless of branch
-           for (let k = 0; k < availableSeats.length; k++) {
-               const fallbackSeat = availableSeats[k];
-               const fallbackSeatKey = `${fallbackSeat.block}-${fallbackSeat.floor}-${fallbackSeat.classroom}-${fallbackSeat.benchNumber}`;
-               if (!assignedSeats[fallbackSeatKey]) {
-                   const assignment: SeatingAssignment = { ...student, ...fallbackSeat };
-                   seatingPlan.push(assignment);
-                   assignedSeats[fallbackSeatKey] = assignment;
-                   break;
-               }
-           }
-        }
+        const seat = availableSeats[i]; // Direct assignment after shuffling
+        
+        const assignment: SeatingAssignment = {
+            ...student,
+            ...seat
+        };
+        seatingPlan.push(assignment);
     }
     
     seatingPlan.sort((a,b) => a.hallTicketNumber.localeCompare(b.hallTicketNumber));
@@ -154,3 +136,10 @@ The document is provided below. Process it and extract all students.`,
     return { seatingPlan, examConfig };
   }
 );
+
+
+export async function generateSeatingArrangement(
+  input: GenerateSeatingArrangementInput
+): Promise<GenerateSeatingArrangementOutput> {
+  return seatingArrangementFlow(input);
+}

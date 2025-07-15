@@ -45,20 +45,20 @@ import { useEffect } from "react";
 import { Separator } from "./ui/separator";
 
 
-const fileToDataUri = (file: File) =>
+const fileToText = (file: File) =>
   new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (event) => resolve(event.target?.result as string);
     reader.onerror = (error) => reject(error);
-    reader.readAsDataURL(file);
+    reader.readAsText(file);
   });
 
 type LayoutFormType = z.infer<typeof LayoutFormSchema>;
 
 const GenerationFormSchema = z.object({
-  studentListDoc: z
+  studentListCsv: z
     .any()
-    .refine((files) => files?.length === 1, "Student list PDF file is required."),
+    .refine((files) => files?.length === 1, "Student list CSV file is required."),
 });
 type GenerationFormType = z.infer<typeof GenerationFormSchema>;
 
@@ -84,6 +84,7 @@ export default function AdminDashboard() {
     defaultValues: {
       blocks: [{ name: "Main Block", floors: [{ number: 1, rooms: [{ number: "101", benches: 15, studentsPerBench: 1 }] }] }],
       startDate: new Date(),
+      endDate: new Date(),
       examTimings: "09:00 AM to 12:00 PM"
     }
   });
@@ -125,11 +126,11 @@ export default function AdminDashboard() {
         return;
       }
 
-      const studentFile = data.studentListDoc[0] as File;
-      const studentListDataUri = await fileToDataUri(studentFile);
+      const studentFile = data.studentListCsv[0] as File;
+      const studentListCsvData = await fileToText(studentFile);
 
       const result = await createSeatingPlanAction(
-        studentListDataUri,
+        studentListCsvData,
         layoutConfig
       );
 
@@ -324,7 +325,7 @@ export default function AdminDashboard() {
         <CardHeader>
           <CardTitle>Seating Setup - Step 2: Upload Student List</CardTitle>
           <CardDescription>
-            Upload the student list in PDF format. The system will use the layout from Step 1 to generate the seating arrangement.
+            Upload the student list in CSV format. The system will use the layout from Step 1 to generate the seating arrangement.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -332,21 +333,21 @@ export default function AdminDashboard() {
             <form onSubmit={generationForm.handleSubmit(handleGenerationSubmit)} className="space-y-6">
               <FormField
                 control={generationForm.control}
-                name="studentListDoc"
+                name="studentListCsv"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
-                      <FileUp /> Student List File (PDF)
+                      <FileUp /> Student List File (CSV)
                     </FormLabel>
                     <FormControl>
                       <Input
                         type="file"
-                        accept=".pdf"
+                        accept=".csv"
                         onChange={(e) => field.onChange(e.target.files)}
                       />
                     </FormControl>
                     <FormDescription>
-                      Ensure the PDF has headers: name, hallTicketNumber, branch,
+                      Ensure the CSV has headers: name, hallTicketNumber, branch,
                       contactNumber.
                     </FormDescription>
                     <FormMessage />

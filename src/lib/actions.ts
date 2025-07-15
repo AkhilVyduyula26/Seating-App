@@ -14,12 +14,12 @@ const seatingPlanPath = path.resolve(process.cwd(), ".data/seating-plan.json");
 const facultyAuthPath = path.resolve(process.cwd(), ".data/faculty-auth.json");
 
 export async function createSeatingPlanAction(
-  studentListDocDataUri: string,
+  studentListCsvData: string,
   layoutConfig: LayoutConfig,
 ) {
   try {
     const input: GenerateSeatingArrangementInput = {
-      studentListDoc: studentListDocDataUri,
+      studentListCsv: studentListCsvData,
       layoutConfig: {
         ...layoutConfig,
         // Dates are converted to string for serialization
