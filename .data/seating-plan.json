@@ -2,31 +2,31 @@
   "plan": [
     {
       "benchNumber": 1,
-      "block": "1",
+      "block": "SOE2",
       "branch": "CSE",
       "classroom": "201",
-      "contactNumber": "9999999999",
-      "floor": "2",
+      "contactNumber": "9876543210",
+      "floor": "1",
       "hallTicketNumber": "1001",
       "name": "John Doe"
     },
     {
       "benchNumber": 2,
-      "block": "1",
+      "block": "SOE2",
       "branch": "IT",
-      "classroom": "202",
-      "contactNumber": "8888888888",
-      "floor": "2",
+      "classroom": "201",
+      "contactNumber": "9876543211",
+      "floor": "1",
       "hallTicketNumber": "1002",
-      "name": "Jane Smith"
+      "name": "Jane Doe"
     },
     {
       "benchNumber": 3,
-      "block": "1",
+      "block": "SOE2",
       "branch": "IoT",
-      "classroom": "301",
-      "contactNumber": "7777777777",
-      "floor": "3",
+      "classroom": "201",
+      "contactNumber": "9876543212",
+      "floor": "1",
       "hallTicketNumber": "1003",
       "name": "Peter Jones"
     }
