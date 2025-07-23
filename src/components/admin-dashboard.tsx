@@ -35,6 +35,7 @@ import {
   PlusCircle,
   X,
   Users,
+  Download,
 } from "lucide-react";
 import { SeatingTable } from "./seating-table";
 import { ExamConfig, SeatingAssignment, LayoutConfig, BlockSchema, LayoutFormSchema, GenerationFormSchema, RoomBranchSummary } from "@/lib/types";
@@ -44,6 +45,8 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useEffect } from "react";
 import { Separator } from "./ui/separator";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 
 const fileToText = (file: File) =>
@@ -193,6 +196,34 @@ export default function AdminDashboard() {
     });
   };
 
+  const handleDownloadPdf = () => {
+    if (!seatingData) return;
+
+    const doc = new jsPDF();
+    doc.text("Room Occupancy Summary", 14, 16);
+
+    const tableData: (string | number)[][] = [];
+    Object.entries(seatingData.summary).forEach(([room, branches]) => {
+      Object.entries(branches).forEach(([branch, count]) => {
+        tableData.push([room, branch, count]);
+      });
+    });
+
+    autoTable(doc, {
+      head: [['Room', 'Branch', 'Student Count']],
+      body: tableData,
+      startY: 20,
+      theme: 'grid',
+       headStyles: {
+        fillColor: [41, 128, 185], // A nice blue color
+        textColor: 255,
+        fontStyle: 'bold',
+      },
+    });
+
+    doc.save('room_occupancy_summary.pdf');
+  };
+
   if (isLoading) {
     return (
         <div className="flex items-center justify-center p-8">
@@ -226,14 +257,20 @@ export default function AdminDashboard() {
         </Card>
         
         <Card className="shadow-lg">
-             <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Users />
-                   <span>Room Occupancy Summary</span>
-                </CardTitle>
-                <CardDescription>
-                    Branch-wise student count in each room.
-                </CardDescription>
+             <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle className="flex items-center gap-2">
+                        <Users />
+                       <span>Room Occupancy Summary</span>
+                    </CardTitle>
+                    <CardDescription>
+                        Branch-wise student count in each room.
+                    </CardDescription>
+                </div>
+                 <Button onClick={handleDownloadPdf} variant="outline" size="sm">
+                    <Download className="mr-2 h-4 w-4" />
+                    Download as PDF
+                </Button>
             </CardHeader>
              <CardContent>
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
