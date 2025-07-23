@@ -1,9 +1,25 @@
 {
   "authorized_faculty": [
-    { "name": "Ramesh", "faculty_id": "MRUE2109T029" },
-    { "name": "Sravani", "faculty_id": "MRUE2109T045" },
-    { "name": "Naveen", "faculty_id": "MRUE2109T052" },
-    { "name": "Divya", "faculty_id": "MRUE2109T061" }
+    {
+      "name": "Divya",
+      "faculty_id": "MRUE2109T061"
+    },
+    {
+      "name": "Naveen",
+      "faculty_id": "MRUE2109T052"
+    },
+    {
+      "name": "Ramesh",
+      "faculty_id": "MRUE2109T029"
+    },
+    {
+      "name": "Shivaprasad",
+      "faculty_id": "MRUE2109T028"
+    },
+    {
+      "name": "Sravani",
+      "faculty_id": "MRUE2109T045"
+    }
   ],
   "secure_key": "FACULTY@2025#ACCESS"
 }

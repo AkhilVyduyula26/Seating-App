@@ -47,6 +47,7 @@ import type { AuthorizedFaculty } from '@/lib/types';
 import { Separator } from './ui/separator';
 
 const LoginSchema = z.object({
+  facultyId: z.string().min(1, 'Faculty ID is required.'),
   secureKey: z.string().min(1, 'Secure key is required.'),
 });
 type LoginType = z.infer<typeof LoginSchema>;
@@ -72,7 +73,7 @@ export default function FacultyView() {
 
   const loginForm = useForm<LoginType>({
     resolver: zodResolver(LoginSchema),
-    defaultValues: { secureKey: '' },
+    defaultValues: { facultyId: '', secureKey: '' },
   });
 
   const addFacultyForm = useForm<AddFacultyType>({
@@ -105,11 +106,8 @@ export default function FacultyView() {
 
   const onLoginSubmit: SubmitHandler<LoginType> = (data) => {
     startTransition(async () => {
-      // For faculty tools, we validate against the stored secure key.
-      // The facultyId can be any valid one, or we can bypass it.
-      // Here, we'll just check the key for simplicity.
-      const facultyCheck = await getFacultyAuthDataAction();
-      if(facultyCheck.success && facultyCheck.data?.secure_key === data.secureKey){
+      const result = await validateFacultyAction(data.facultyId, data.secureKey);
+      if(result.isValid){
         setIsAuthorized(true);
         fetchFacultyData();
         toast({
@@ -120,7 +118,7 @@ export default function FacultyView() {
         toast({
           variant: 'destructive',
           title: 'Validation Failed',
-          description: 'The provided Secure Key is incorrect.',
+          description: result.error || 'The provided credentials are incorrect.',
         });
       }
     });
@@ -183,12 +181,29 @@ export default function FacultyView() {
         <CardHeader className="p-0 mb-4 text-center">
             <CardTitle>Faculty Tools</CardTitle>
             <CardDescription>
-            Enter the secure key to manage the faculty list.
+            Enter credentials to manage the faculty list.
             </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
             <Form {...loginForm}>
             <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                <FormField
+                    control={loginForm.control}
+                    name="facultyId"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className="sr-only">Faculty ID</FormLabel>
+                        <FormControl>
+                        <Input
+                            placeholder="Enter your Faculty ID"
+                            {...field}
+                            disabled={isPending}
+                        />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
                 <FormField
                     control={loginForm.control}
                     name="secureKey"
