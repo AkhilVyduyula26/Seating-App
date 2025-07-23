@@ -58,6 +58,15 @@ export const LayoutFormSchema = z.object({
 });
 export type LayoutConfig = z.infer<typeof LayoutFormSchema>;
 
+export const GenerationFormSchema = z.object({
+  studentListCsvs: z
+    .array(z.object({
+        file: z.any().refine(file => file?.length === 1, "A file is required."),
+    }))
+    .min(1, "At least one student list CSV file is required."),
+});
+
+
 export const GenerateSeatingArrangementInputSchema = z.object({
   studentListCsvs: z.array(z.string()).describe(
       "An array of CSV file contents as strings, each containing a list of students."

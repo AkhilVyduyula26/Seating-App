@@ -36,7 +36,7 @@ import {
   X,
 } from "lucide-react";
 import { SeatingTable } from "./seating-table";
-import { ExamConfig, SeatingAssignment, LayoutConfig, BlockSchema, LayoutFormSchema } from "@/lib/types";
+import { ExamConfig, SeatingAssignment, LayoutConfig, BlockSchema, LayoutFormSchema, GenerationFormSchema } from "@/lib/types";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { format } from "date-fns";
@@ -54,13 +54,8 @@ const fileToText = (file: File) =>
   });
 
 type LayoutFormType = z.infer<typeof LayoutFormSchema>;
-
-const GenerationFormSchema = z.object({
-  studentListCsvs: z
-    .any()
-    .refine((files) => files?.length > 0, "At least one student list CSV file is required."),
-});
 type GenerationFormType = z.infer<typeof GenerationFormSchema>;
+
 
 interface DisplaySeatingData {
     plan: SeatingAssignment[];
@@ -96,6 +91,14 @@ export default function AdminDashboard() {
 
   const generationForm = useForm<GenerationFormType>({
     resolver: zodResolver(GenerationFormSchema),
+    defaultValues: {
+        studentListCsvs: [{ file: undefined }]
+    }
+  });
+
+  const { fields: fileFields, append: appendFile, remove: removeFile } = useFieldArray({
+      control: generationForm.control,
+      name: "studentListCsvs"
   });
 
   useEffect(() => {
@@ -125,9 +128,15 @@ export default function AdminDashboard() {
         toast({ variant: "destructive", title: "Error", description: "Layout configuration is missing." });
         return;
       }
+      
+      const files: File[] = data.studentListCsvs.map(f => f.file[0]).filter(Boolean);
 
-      const studentFiles = Array.from(data.studentListCsvs) as File[];
-      const studentListCsvsData = await Promise.all(studentFiles.map(fileToText));
+      if (files.length === 0) {
+          toast({ variant: "destructive", title: "Error", description: "Please upload at least one student file." });
+          return;
+      }
+
+      const studentListCsvsData = await Promise.all(files.map(fileToText));
 
       const result = await createSeatingPlanAction(
         studentListCsvsData,
@@ -323,7 +332,7 @@ export default function AdminDashboard() {
     return (
       <Card className="w-full max-w-lg mx-auto shadow-lg">
         <CardHeader>
-          <CardTitle>Seating Setup - Step 2: Upload Student List</CardTitle>
+          <CardTitle>Seating Setup - Step 2: Upload Student Lists</CardTitle>
           <CardDescription>
             Upload one or more student list files in CSV format. Each file can represent a different branch. The system will combine them.
           </CardDescription>
@@ -331,30 +340,52 @@ export default function AdminDashboard() {
         <CardContent>
           <Form {...generationForm}>
             <form onSubmit={generationForm.handleSubmit(handleGenerationSubmit)} className="space-y-6">
-              <FormField
-                control={generationForm.control}
-                name="studentListCsvs"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      <FileUp /> Student List Files (CSV)
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        type="file"
-                        accept=".csv"
-                        multiple
-                        onChange={(e) => field.onChange(e.target.files)}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Ensure each CSV has headers: name, hallTicketNumber, branch,
-                      contactNumber.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="space-y-4">
+                {fileFields.map((field, index) => (
+                    <FormField
+                    key={field.id}
+                    control={generationForm.control}
+                    name={`studentListCsvs.${index}.file`}
+                    render={({ field: { onChange, value, ...rest } }) => (
+                      <FormItem>
+                        <FormLabel className={cn(index !== 0 && "sr-only")}>
+                         Student List Files (CSV)
+                        </FormLabel>
+                         <div className="flex items-center gap-2">
+                            <FormControl>
+                                <Input
+                                    type="file"
+                                    accept=".csv"
+                                    onChange={(e) => onChange(e.target.files)}
+                                    {...rest}
+                                />
+                            </FormControl>
+                            {fileFields.length > 1 && (
+                                <Button variant="ghost" size="icon" onClick={() => removeFile(index)}>
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            )}
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ))}
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => appendFile({ file: undefined })}
+                >
+                    <PlusCircle className="mr-2 h-4 w-4"/>
+                    Add Another File
+                </Button>
+              </div>
+                <FormDescription>
+                  Ensure each CSV has headers: name, hallTicketNumber, branch,
+                  contactNumber.
+                </FormDescription>
+
                <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setStep(1)} className="w-1/3">Back to Step 1</Button>
                 <Button
