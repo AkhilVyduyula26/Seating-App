@@ -10,7 +10,6 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, SeatingAssignment, ExamConfigSchema, Student, RoomBranchSummary } from '@/lib/types';
 import Papa from 'papaparse';
-import pdf from 'pdf-parse';
 
 
 // Helper function to shuffle an array
@@ -64,6 +63,7 @@ async function parseStudentsFromCSV(csvData: string): Promise<Student[]> {
 }
 
 async function parseStudentsFromPDF(pdfBuffer: Buffer): Promise<Student[]> {
+    const pdf = (await import('pdf-parse')).default;
     const data = await pdf(pdfBuffer);
     const lines = data.text.split('\n').filter(line => line.trim() !== '');
 
@@ -104,7 +104,7 @@ const seatingArrangementFlow = ai.defineFlow(
             let students: Student[];
             if (dataUri.startsWith('data:application/pdf')) {
                  students = await parseStudentsFromPDF(buffer);
-            } else if (dataUri.startsWith('data:text/csv')) {
+            } else if (dataUri.startsWith('data:text/csv') || dataUri.startsWith('data:application/vnd.ms-excel')) {
                  students = await parseStudentsFromCSV(buffer.toString('utf-8'));
             } else {
                 // Try to infer from buffer if mime type is generic

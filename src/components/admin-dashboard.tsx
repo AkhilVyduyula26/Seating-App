@@ -427,7 +427,7 @@ export default function AdminDashboard() {
                             <FormControl>
                                 <Input
                                     type="file"
-                                    accept=".csv,.pdf"
+                                    accept=".csv,.pdf,application/vnd.ms-excel"
                                     onChange={(e) => onChange(e.target.files)}
                                     {...rest}
                                 />
