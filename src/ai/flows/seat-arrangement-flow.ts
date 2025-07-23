@@ -29,7 +29,7 @@ function dataUriToBuffer(dataUri: string): Buffer {
 // Flexible header mapping to find student data fields.
 // Keys are the internal field names, values are arrays of possible header names (case-insensitive).
 const headerMapping: Record<keyof Student, string[]> = {
-  name: ['name', 'studentname', 'fullname', 'student name'],
+  name: ['name', 'studentname', 'fullname', 'student name', 'nameofstudent'],
   hallTicketNumber: ['hallticketnumber', 'hallticket', 'ticketnumber', 'htno', 'rollno', 'roll number'],
   branch: ['branch', 'department', 'stream'],
   contactNumber: ['contactnumber', 'phone', 'phonenumber', 'mobile', 'contact no'],
