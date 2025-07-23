@@ -38,12 +38,12 @@ async function writeFacultyAuthData(data: FacultyAuthData): Promise<void> {
 
 
 export async function createSeatingPlanAction(
-  studentListCsvData: string,
+  studentListCsvs: string[],
   layoutConfig: LayoutConfig,
 ) {
   try {
     const input: GenerateSeatingArrangementInput = {
-      studentListCsv: studentListCsvData,
+      studentListCsvs: studentListCsvs,
       layoutConfig: {
         ...layoutConfig,
         // Dates are converted to string for serialization

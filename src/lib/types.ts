@@ -59,10 +59,8 @@ export const LayoutFormSchema = z.object({
 export type LayoutConfig = z.infer<typeof LayoutFormSchema>;
 
 export const GenerateSeatingArrangementInputSchema = z.object({
-  studentListCsv: z
-    .string()
-    .describe(
-      "A CSV file content as a string, containing the list of students."
+  studentListCsvs: z.array(z.string()).describe(
+      "An array of CSV file contents as strings, each containing a list of students."
     ),
   layoutConfig: LayoutFormSchema.omit({ startDate: true, endDate: true }).extend({
       startDate: z.string(),

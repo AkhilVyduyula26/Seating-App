@@ -56,9 +56,9 @@ const fileToText = (file: File) =>
 type LayoutFormType = z.infer<typeof LayoutFormSchema>;
 
 const GenerationFormSchema = z.object({
-  studentListCsv: z
+  studentListCsvs: z
     .any()
-    .refine((files) => files?.length === 1, "Student list CSV file is required."),
+    .refine((files) => files?.length > 0, "At least one student list CSV file is required."),
 });
 type GenerationFormType = z.infer<typeof GenerationFormSchema>;
 
@@ -126,11 +126,11 @@ export default function AdminDashboard() {
         return;
       }
 
-      const studentFile = data.studentListCsv[0] as File;
-      const studentListCsvData = await fileToText(studentFile);
+      const studentFiles = Array.from(data.studentListCsvs) as File[];
+      const studentListCsvsData = await Promise.all(studentFiles.map(fileToText));
 
       const result = await createSeatingPlanAction(
-        studentListCsvData,
+        studentListCsvsData,
         layoutConfig
       );
 
@@ -325,7 +325,7 @@ export default function AdminDashboard() {
         <CardHeader>
           <CardTitle>Seating Setup - Step 2: Upload Student List</CardTitle>
           <CardDescription>
-            Upload the student list in CSV format. The system will use the layout from Step 1 to generate the seating arrangement.
+            Upload one or more student list files in CSV format. Each file can represent a different branch. The system will combine them.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -333,21 +333,22 @@ export default function AdminDashboard() {
             <form onSubmit={generationForm.handleSubmit(handleGenerationSubmit)} className="space-y-6">
               <FormField
                 control={generationForm.control}
-                name="studentListCsv"
+                name="studentListCsvs"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
-                      <FileUp /> Student List File (CSV)
+                      <FileUp /> Student List Files (CSV)
                     </FormLabel>
                     <FormControl>
                       <Input
                         type="file"
                         accept=".csv"
+                        multiple
                         onChange={(e) => field.onChange(e.target.files)}
                       />
                     </FormControl>
                     <FormDescription>
-                      Ensure the CSV has headers: name, hallTicketNumber, branch,
+                      Ensure each CSV has headers: name, hallTicketNumber, branch,
                       contactNumber.
                     </FormDescription>
                     <FormMessage />

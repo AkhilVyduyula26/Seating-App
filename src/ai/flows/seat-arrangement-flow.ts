@@ -65,16 +65,19 @@ const seatingArrangementFlow = ai.defineFlow(
   },
   async (input) => {
     
-    // Step 1: Parse the Student List CSV
-    let students: Student[];
+    // Step 1: Parse all student list CSVs
+    let allStudents: Student[] = [];
     try {
-        students = await parseStudentsFromCSV(input.studentListCsv);
+        for(const csvData of input.studentListCsvs) {
+            const students = await parseStudentsFromCSV(csvData);
+            allStudents.push(...students);
+        }
     } catch(e: any) {
-        return { error: e.message || "Failed to parse student CSV."};
+        return { error: e.message || "Failed to parse one or more student CSVs."};
     }
     
-    if (!students || students.length === 0) {
-        return { error: "Could not extract any student data from the CSV. Please ensure the file is correctly formatted and not empty." };
+    if (!allStudents || allStudents.length === 0) {
+        return { error: "Could not extract any student data from the CSVs. Please ensure files are correctly formatted and not empty." };
     }
     
     // Step 2: Procedurally generate the seating plan based on the layout config
@@ -98,16 +101,15 @@ const seatingArrangementFlow = ai.defineFlow(
         });
     });
 
-    if (students.length > availableSeats.length) {
-        return { error: `Not enough seats for all students. Required: ${students.length}, Available: ${availableSeats.length}. Please increase the layout capacity.` };
+    if (allStudents.length > availableSeats.length) {
+        return { error: `Not enough seats for all students. Required: ${allStudents.length}, Available: ${availableSeats.length}. Please increase the layout capacity.` };
     }
     
     // Shuffle students for random assignment
-    const shuffledStudents = shuffleArray(students);
+    const shuffledStudents = shuffleArray(allStudents);
     
     const seatingPlan: SeatingAssignment[] = [];
-    const assignedSeats: { [key: string]: SeatingAssignment } = {}; // To check for adjacent branches
-
+    
     for (let i = 0; i < shuffledStudents.length; i++) {
         const student = shuffledStudents[i];
         const seat = availableSeats[i]; // Direct assignment after shuffling
