@@ -34,9 +34,10 @@ import {
   CalendarIcon,
   PlusCircle,
   X,
+  Users,
 } from "lucide-react";
 import { SeatingTable } from "./seating-table";
-import { ExamConfig, SeatingAssignment, LayoutConfig, BlockSchema, LayoutFormSchema, GenerationFormSchema } from "@/lib/types";
+import { ExamConfig, SeatingAssignment, LayoutConfig, BlockSchema, LayoutFormSchema, GenerationFormSchema, RoomBranchSummary } from "@/lib/types";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { format } from "date-fns";
@@ -63,6 +64,7 @@ interface DisplaySeatingData {
         startDate: Date;
         endDate: Date;
     };
+    summary: RoomBranchSummary;
 }
 
 export default function AdminDashboard() {
@@ -104,14 +106,15 @@ export default function AdminDashboard() {
   useEffect(() => {
     startLoading(async () => {
       const data = await getSeatingDataAction();
-      if (data.plan && data.examConfig) {
+      if (data.plan && data.examConfig && data.summary) {
         setSeatingData({
             plan: data.plan,
             examConfig: {
                 ...data.examConfig,
                 startDate: new Date(data.examConfig.startDate),
                 endDate: new Date(data.examConfig.endDate),
-            }
+            },
+            summary: data.summary,
         });
       }
     });
@@ -143,7 +146,7 @@ export default function AdminDashboard() {
         layoutConfig
       );
 
-      if (result.success && result.plan && result.examConfig) {
+      if (result.success && result.plan && result.examConfig && result.summary) {
         toast({
           title: "Success",
           description: "Seating plan created successfully.",
@@ -154,7 +157,8 @@ export default function AdminDashboard() {
                 ...result.examConfig,
                 startDate: new Date(result.examConfig.startDate),
                 endDate: new Date(result.examConfig.endDate),
-            }
+            },
+            summary: result.summary,
         });
       } else {
         toast({
@@ -200,7 +204,8 @@ export default function AdminDashboard() {
 
   if (seatingData) {
     return (
-        <Card className="w-full max-w-7xl shadow-lg">
+      <div className="w-full max-w-7xl mx-auto space-y-6">
+        <Card className="shadow-lg">
             <CardHeader>
                 <CardTitle className="flex justify-between items-center">
                     <span>Generated Seating Plan</span>
@@ -219,6 +224,36 @@ export default function AdminDashboard() {
                 </Button>
             </CardFooter>
         </Card>
+        
+        <Card className="shadow-lg">
+             <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Users />
+                   <span>Room Occupancy Summary</span>
+                </CardTitle>
+                <CardDescription>
+                    Branch-wise student count in each room.
+                </CardDescription>
+            </CardHeader>
+             <CardContent>
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                     {Object.entries(seatingData.summary).map(([room, branches]) => (
+                         <div key={room} className="p-4 rounded-lg bg-muted/50">
+                             <h4 className="font-semibold text-primary mb-2">Room: {room}</h4>
+                             <ul className="space-y-1 text-sm">
+                                 {Object.entries(branches).map(([branch, count]) => (
+                                     <li key={branch} className="flex justify-between">
+                                         <span>{branch}:</span>
+                                         <span className="font-medium">{count} student(s)</span>
+                                     </li>
+                                 ))}
+                             </ul>
+                         </div>
+                     ))}
+                 </div>
+             </CardContent>
+        </Card>
+      </div>
     );
   }
 

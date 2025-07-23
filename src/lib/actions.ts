@@ -7,7 +7,7 @@ import {
   generateSeatingArrangement,
 } from "@/ai/flows/seat-arrangement-flow";
 import { validateFaculty } from "@/ai/flows/validate-faculty-flow";
-import type { GenerateSeatingArrangementInput, ValidateFacultyInput, ExamConfig, LayoutConfig, AuthorizedFaculty } from '@/lib/types';
+import type { GenerateSeatingArrangementInput, ValidateFacultyInput, ExamConfig, LayoutConfig, AuthorizedFaculty, RoomBranchSummary } from '@/lib/types';
 import { format } from "date-fns";
 
 const seatingPlanPath = path.resolve(process.cwd(), ".data/seating-plan.json");
@@ -59,9 +59,9 @@ export async function createSeatingPlanAction(
     }
     
     await fs.mkdir(path.dirname(seatingPlanPath), { recursive: true });
-    await fs.writeFile(seatingPlanPath, JSON.stringify({ plan: result.seatingPlan, examConfig: result.examConfig }, null, 2));
+    await fs.writeFile(seatingPlanPath, JSON.stringify({ plan: result.seatingPlan, examConfig: result.examConfig, summary: result.roomBranchSummary }, null, 2));
 
-    return { success: true, plan: result.seatingPlan, examConfig: result.examConfig };
+    return { success: true, plan: result.seatingPlan, examConfig: result.examConfig, summary: result.roomBranchSummary };
   } catch (e: any) {
     console.error("Error creating seating plan:", e);
      if (e.message?.includes("API key not valid")) {
@@ -79,12 +79,13 @@ export async function createSeatingPlanAction(
 export async function getSeatingDataAction(): Promise<{
   plan?: any[];
   examConfig?: ExamConfig;
+  summary?: RoomBranchSummary;
   error?: string;
 }> {
   try {
     const data = await fs.readFile(seatingPlanPath, "utf-8");
     const parsedData = JSON.parse(data);
-    return { plan: parsedData.plan, examConfig: parsedData.examConfig };
+    return { plan: parsedData.plan, examConfig: parsedData.examConfig, summary: parsedData.summary };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       // Return null instead of an error string to indicate no plan exists

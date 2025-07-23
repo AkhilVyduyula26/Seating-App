@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview This flow handles parsing a student CSV and generating a seating arrangement automatically.
@@ -7,7 +8,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, SeatingAssignment, ExamConfigSchema, Student } from '@/lib/types';
+import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, SeatingAssignment, ExamConfigSchema, Student, RoomBranchSummary } from '@/lib/types';
 import Papa from 'papaparse';
 
 
@@ -135,7 +136,20 @@ const seatingArrangementFlow = ai.defineFlow(
         useSamePlan: true,
     };
 
-    return { seatingPlan, examConfig };
+    // Step 4: Generate the room-branch summary
+    const roomBranchSummary: RoomBranchSummary = {};
+    seatingPlan.forEach(assignment => {
+        const { classroom, branch } = assignment;
+        if (!roomBranchSummary[classroom]) {
+            roomBranchSummary[classroom] = {};
+        }
+        if (!roomBranchSummary[classroom][branch]) {
+            roomBranchSummary[classroom][branch] = 0;
+        }
+        roomBranchSummary[classroom][branch]++;
+    });
+
+    return { seatingPlan, examConfig, roomBranchSummary };
   }
 );
 
