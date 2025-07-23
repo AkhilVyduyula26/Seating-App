@@ -26,22 +26,22 @@ function dataUriToBuffer(dataUri: string): Buffer {
     return Buffer.from(base64, 'base64');
 }
 
-// Flexible header mapping
-const headerMapping: { [key: string]: (keyof Student)[] } = {
-    name: ['name', 'studentname', 'fullname'],
-    hallTicketNumber: ['hallticketnumber', 'hallticket', 'ticketnumber', 'htno'],
-    branch: ['branch', 'department', 'stream'],
-    contactNumber: ['contactnumber', 'phone', 'phonenumber', 'mobile'],
+// Flexible header mapping to find student data fields.
+// Keys are the internal field names, values are arrays of possible header names (case-insensitive).
+const headerMapping: Record<keyof Student, string[]> = {
+  name: ['name', 'studentname', 'fullname', 'student name'],
+  hallTicketNumber: ['hallticketnumber', 'hallticket', 'ticketnumber', 'htno', 'rollno', 'roll number'],
+  branch: ['branch', 'department', 'stream'],
+  contactNumber: ['contactnumber', 'phone', 'phonenumber', 'mobile', 'contact no'],
 };
 
-// Function to find the header key from the mapping
-function findHeaderKey(header: string, headers: string[]): string | undefined {
-    const normalizedHeader = header.toLowerCase().replace(/[^a-z0-9]/g, '');
-    for(const key of headers) {
-        const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const possibleKeys = headerMapping[normalizedHeader as keyof typeof headerMapping] || [normalizedHeader];
-        if (possibleKeys.includes(normalizedKey)) {
-            return key;
+// Function to find the actual header from the file that corresponds to our internal field.
+function findHeaderKey(field: keyof Student, headers: string[]): string | undefined {
+    const possibleNames = headerMapping[field];
+    for (const header of headers) {
+        const normalizedHeader = header.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (possibleNames.includes(normalizedHeader)) {
+            return header; // Return the original header name to access the data
         }
     }
     return undefined;
@@ -67,9 +67,11 @@ async function parseStudentsFromCSV(csvData: string): Promise<Student[]> {
                 const branchHeader = findHeaderKey('branch', parsedHeaders);
                 const contactHeader = findHeaderKey('contactNumber', parsedHeaders);
 
-                if (!nameHeader || !hallTicketHeader || !branchHeader || !contactHeader) {
-                    return reject(new Error("CSV must contain headers for Name, Hall Ticket Number, Branch, and Contact Number."));
-                }
+                if (!nameHeader) return reject(new Error("Could not find a 'Name' column. Please ensure your CSV has a column for student names (e.g., 'Name', 'FullName')."));
+                if (!hallTicketHeader) return reject(new Error("Could not find a 'Hall Ticket Number' column. Please ensure your CSV has a column for hall tickets (e.g., 'HallTicket', 'Roll No')."));
+                if (!branchHeader) return reject(new Error("Could not find a 'Branch' column. Please ensure your CSV has a column for student branch (e.g., 'Branch', 'Department')."));
+                if (!contactHeader) return reject(new Error("Could not find a 'Contact Number' column. Please ensure your CSV has a column for contact info (e.g., 'Phone', 'ContactNumber')."));
+
 
                 const students: Student[] = (results.data as any[]).map(row => ({
                     name: row[nameHeader] || '',
@@ -97,35 +99,38 @@ async function parseStudentsFromPDF(pdfBuffer: Buffer): Promise<Student[]> {
       throw new Error("PDF content is not in a valid table format.");
     }
 
-    const headers = lines[0].trim().split(/\s+/);
+    // Treat the first line as headers, trim each header.
+    const headers = lines[0].trim().split(/\s{2,}/).map(h => h.trim());
     
     const nameHeader = findHeaderKey('name', headers);
     const hallTicketHeader = findHeaderKey('hallTicketNumber', headers);
     const branchHeader = findHeaderKey('branch', headers);
     const contactHeader = findHeaderKey('contactNumber', headers);
 
-    if (!nameHeader || !hallTicketHeader || !branchHeader || !contactHeader) {
-        throw new Error("PDF must contain headers for Name, Hall Ticket Number, Branch, and Contact Number.");
-    }
-    
+    if (!nameHeader) throw new Error("Could not find a 'Name' column in the PDF. Please ensure your PDF has a column for student names.");
+    if (!hallTicketHeader) throw new Error("Could not find a 'Hall Ticket Number' column in the PDF. Please ensure your PDF has a column for hall tickets.");
+    if (!branchHeader) throw new Error("Could not find a 'Branch' column in the PDF. Please ensure your PDF has a column for student branch.");
+    if (!contactHeader) throw new Error("Could not find a 'Contact Number' column in the PDF. Please ensure your PDF has a column for contact info.");
+
     const nameIndex = headers.indexOf(nameHeader);
     const hallTicketIndex = headers.indexOf(hallTicketHeader);
     const branchIndex = headers.indexOf(branchHeader);
     const contactIndex = headers.indexOf(contactHeader);
 
-
+    // This regex is designed to split columns based on two or more spaces,
+    // which is common for text-based tables in PDFs.
     const students: Student[] = lines.slice(1)
         .map(line => {
-            const parts = line.trim().split(/\s+/);
+            const parts = line.trim().split(/\s{2,}/).map(p => p.trim());
             if(parts.length < headers.length) return null;
             return {
-                name: parts[nameIndex],
-                hallTicketNumber: parts[hallTicketIndex],
-                branch: parts[branchIndex],
-                contactNumber: parts[contactIndex],
+                name: parts[nameIndex] || '',
+                hallTicketNumber: parts[hallTicketIndex] || '',
+                branch: parts[branchIndex] || '',
+                contactNumber: parts[contactIndex] || '',
             };
         })
-        .filter((s): s is Student => s !== null && !!s.hallTicketNumber);
+        .filter((s): s is Student => s !== null && !!s.hallTicketNumber && !!s.name);
 
     if (students.length === 0) {
         throw new Error("Could not parse any students from the PDF. Please check the file's text format.");
