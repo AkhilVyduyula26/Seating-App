@@ -60,17 +60,17 @@ export const LayoutFormSchema = z.object({
 export type LayoutConfig = z.infer<typeof LayoutFormSchema>;
 
 export const GenerationFormSchema = z.object({
-  studentListCsvs: z
+  studentListFiles: z
     .array(z.object({
         file: z.any().refine(file => file?.length === 1, "A file is required."),
     }))
-    .min(1, "At least one student list CSV file is required."),
+    .min(1, "At least one student list file is required."),
 });
 
 
 export const GenerateSeatingArrangementInputSchema = z.object({
-  studentListCsvs: z.array(z.string()).describe(
-      "An array of CSV file contents as strings, each containing a list of students."
+  studentListDataUris: z.array(z.string()).describe(
+      "An array of student list files as data URIs. Can be CSV or PDF."
     ),
   layoutConfig: LayoutFormSchema.omit({ startDate: true, endDate: true }).extend({
       startDate: z.string(),
@@ -109,3 +109,5 @@ export const AuthorizedFacultySchema = z.object({
   faculty_id: z.string(),
 });
 export type AuthorizedFaculty = z.infer<typeof AuthorizedFacultySchema>;
+
+    

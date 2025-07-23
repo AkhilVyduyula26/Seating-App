@@ -49,12 +49,12 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 
-const fileToText = (file: File) =>
+const fileToDataUri = (file: File) =>
   new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (event) => resolve(event.target?.result as string);
     reader.onerror = (error) => reject(error);
-    reader.readAsText(file);
+    reader.readAsDataURL(file);
   });
 
 type LayoutFormType = z.infer<typeof LayoutFormSchema>;
@@ -97,13 +97,13 @@ export default function AdminDashboard() {
   const generationForm = useForm<GenerationFormType>({
     resolver: zodResolver(GenerationFormSchema),
     defaultValues: {
-        studentListCsvs: [{ file: undefined }]
+        studentListFiles: [{ file: undefined }]
     }
   });
 
   const { fields: fileFields, append: appendFile, remove: removeFile } = useFieldArray({
       control: generationForm.control,
-      name: "studentListCsvs"
+      name: "studentListFiles"
   });
 
   useEffect(() => {
@@ -135,17 +135,17 @@ export default function AdminDashboard() {
         return;
       }
       
-      const files: File[] = data.studentListCsvs.map(f => f.file[0]).filter(Boolean);
+      const files: File[] = data.studentListFiles.map(f => f.file[0]).filter(Boolean);
 
       if (files.length === 0) {
           toast({ variant: "destructive", title: "Error", description: "Please upload at least one student file." });
           return;
       }
 
-      const studentListCsvsData = await Promise.all(files.map(fileToText));
+      const studentListDataUris = await Promise.all(files.map(fileToDataUri));
 
       const result = await createSeatingPlanAction(
-        studentListCsvsData,
+        studentListDataUris,
         layoutConfig
       );
 
@@ -406,7 +406,7 @@ export default function AdminDashboard() {
         <CardHeader>
           <CardTitle>Seating Setup - Step 2: Upload Student Lists</CardTitle>
           <CardDescription>
-            Upload one or more student list files in CSV format. Each file can represent a different branch. The system will combine them.
+            Upload one or more student list files in CSV or PDF format. Each file can represent a different branch.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -417,17 +417,17 @@ export default function AdminDashboard() {
                     <FormField
                     key={field.id}
                     control={generationForm.control}
-                    name={`studentListCsvs.${index}.file`}
+                    name={`studentListFiles.${index}.file`}
                     render={({ field: { onChange, value, ...rest } }) => (
                       <FormItem>
                         <FormLabel className={cn(index !== 0 && "sr-only")}>
-                         Student List Files (CSV)
+                         Student List Files (CSV, PDF)
                         </FormLabel>
                          <div className="flex items-center gap-2">
                             <FormControl>
                                 <Input
                                     type="file"
-                                    accept=".csv"
+                                    accept=".csv,.pdf"
                                     onChange={(e) => onChange(e.target.files)}
                                     {...rest}
                                 />
@@ -454,8 +454,7 @@ export default function AdminDashboard() {
                 </Button>
               </div>
                 <FormDescription>
-                  Ensure each CSV has headers: name, hallTicketNumber, branch,
-                  contactNumber.
+                  Ensure each file has columns/headers for: name, hallTicketNumber, branch, contactNumber.
                 </FormDescription>
 
                <div className="flex gap-2">
@@ -593,3 +592,5 @@ const RoomsField = ({ blockIndex, floorIndex, control, register, getValues, setV
         </div>
     );
 }
+
+    

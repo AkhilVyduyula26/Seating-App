@@ -38,12 +38,12 @@ async function writeFacultyAuthData(data: FacultyAuthData): Promise<void> {
 
 
 export async function createSeatingPlanAction(
-  studentListCsvs: string[],
+  studentListDataUris: string[],
   layoutConfig: LayoutConfig,
 ) {
   try {
     const input: GenerateSeatingArrangementInput = {
-      studentListCsvs: studentListCsvs,
+      studentListDataUris: studentListDataUris,
       layoutConfig: {
         ...layoutConfig,
         // Dates are converted to string for serialization
@@ -189,3 +189,5 @@ export async function updateSecureKeyAction(newKey: string): Promise<{ success: 
         return { success: false, error: "Failed to update secure key."};
     }
 }
+
+    

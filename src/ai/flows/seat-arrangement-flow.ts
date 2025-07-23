@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview This flow handles parsing a student CSV and generating a seating arrangement automatically.
+ * @fileOverview This flow handles parsing student files (CSV or PDF) and generating a seating arrangement automatically.
  * 
  * - generateSeatingArrangement - A function that orchestrates the document parsing and seat assignment.
  */
@@ -10,6 +10,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, SeatingAssignment, ExamConfigSchema, Student, RoomBranchSummary } from '@/lib/types';
 import Papa from 'papaparse';
+import pdf from 'pdf-parse';
 
 
 // Helper function to shuffle an array
@@ -19,6 +20,11 @@ function shuffleArray<T>(array: T[]): T[] {
         [array[i], array[j]] = [array[j], array[i]];
     }
     return array;
+}
+
+function dataUriToBuffer(dataUri: string): Buffer {
+    const base64 = dataUri.substring(dataUri.indexOf(',') + 1);
+    return Buffer.from(base64, 'base64');
 }
 
 async function parseStudentsFromCSV(csvData: string): Promise<Student[]> {
@@ -57,6 +63,31 @@ async function parseStudentsFromCSV(csvData: string): Promise<Student[]> {
     });
 }
 
+async function parseStudentsFromPDF(pdfBuffer: Buffer): Promise<Student[]> {
+    const data = await pdf(pdfBuffer);
+    const lines = data.text.split('\n').filter(line => line.trim() !== '');
+
+    // Heuristic to parse students from text - might need adjustment for different PDF layouts
+    const students: Student[] = lines.slice(1) // Assuming first line is header
+        .map(line => {
+            const parts = line.trim().split(/\s+/);
+            if(parts.length < 4) return null; // Basic validation
+            return {
+                name: parts.slice(0, -3).join(' '), // Handle names with spaces
+                hallTicketNumber: parts[parts.length - 3],
+                branch: parts[parts.length - 2],
+                contactNumber: parts[parts.length - 1],
+            };
+        })
+        .filter((s): s is Student => s !== null && !!s.hallTicketNumber);
+
+    if (students.length === 0) {
+        throw new Error("Could not parse any students from the PDF. Please check the file's text format.");
+    }
+    
+    return students;
+}
+
 
 const seatingArrangementFlow = ai.defineFlow(
   {
@@ -66,19 +97,35 @@ const seatingArrangementFlow = ai.defineFlow(
   },
   async (input) => {
     
-    // Step 1: Parse all student list CSVs
     let allStudents: Student[] = [];
     try {
-        for(const csvData of input.studentListCsvs) {
-            const students = await parseStudentsFromCSV(csvData);
+        for(const dataUri of input.studentListDataUris) {
+            const buffer = dataUriToBuffer(dataUri);
+            let students: Student[];
+            if (dataUri.startsWith('data:application/pdf')) {
+                 students = await parseStudentsFromPDF(buffer);
+            } else if (dataUri.startsWith('data:text/csv')) {
+                 students = await parseStudentsFromCSV(buffer.toString('utf-8'));
+            } else {
+                // Try to infer from buffer if mime type is generic
+                try {
+                    students = await parseStudentsFromPDF(buffer);
+                } catch (pdfError) {
+                    try {
+                        students = await parseStudentsFromCSV(buffer.toString('utf-8'));
+                    } catch (csvError) {
+                         throw new Error('Unsupported file type. Please upload a valid CSV or PDF file.');
+                    }
+                }
+            }
             allStudents.push(...students);
         }
     } catch(e: any) {
-        return { error: e.message || "Failed to parse one or more student CSVs."};
+        return { error: e.message || "Failed to parse one or more student files."};
     }
     
     if (!allStudents || allStudents.length === 0) {
-        return { error: "Could not extract any student data from the CSVs. Please ensure files are correctly formatted and not empty." };
+        return { error: "Could not extract any student data from the uploaded files. Please ensure files are correctly formatted and not empty." };
     }
     
     // Step 2: Procedurally generate the seating plan based on the layout config
