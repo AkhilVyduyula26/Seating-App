@@ -7,11 +7,35 @@ import {
   generateSeatingArrangement,
 } from "@/ai/flows/seat-arrangement-flow";
 import { validateFaculty } from "@/ai/flows/validate-faculty-flow";
-import type { GenerateSeatingArrangementInput, ValidateFacultyInput, ExamConfig, LayoutConfig } from '@/lib/types';
+import type { GenerateSeatingArrangementInput, ValidateFacultyInput, ExamConfig, LayoutConfig, AuthorizedFaculty } from '@/lib/types';
 import { format } from "date-fns";
 
 const seatingPlanPath = path.resolve(process.cwd(), ".data/seating-plan.json");
 const facultyAuthPath = path.resolve(process.cwd(), ".data/faculty-auth.json");
+
+interface FacultyAuthData {
+    authorized_faculty: AuthorizedFaculty[];
+    secure_key: string;
+}
+
+async function readFacultyAuthData(): Promise<FacultyAuthData> {
+    try {
+        const data = await fs.readFile(facultyAuthPath, "utf-8");
+        return JSON.parse(data);
+    } catch (error) {
+         if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+            // If the file doesn't exist, return a default structure
+             return { authorized_faculty: [], secure_key: "" };
+         }
+        console.error("Error reading faculty auth data:", error);
+        throw new Error("Could not load faculty authorization data.");
+    }
+}
+
+async function writeFacultyAuthData(data: FacultyAuthData): Promise<void> {
+    await fs.writeFile(facultyAuthPath, JSON.stringify(data, null, 2), 'utf-8');
+}
+
 
 export async function createSeatingPlanAction(
   studentListCsvData: string,
@@ -98,32 +122,69 @@ export async function validateFacultyAction(facultyId: string, secureKey?: strin
     }
 }
 
-export async function getFacultyAuthDataAction(): Promise<{ success: boolean; data?: string; error?: string}> {
+export async function getFacultyAuthDataAction(): Promise<{ success: boolean; data?: FacultyAuthData; error?: string}> {
     try {
-        const data = await fs.readFile(facultyAuthPath, 'utf-8');
+        const data = await readFacultyAuthData();
         return { success: true, data };
     } catch (e: any) {
-        if ((e as NodeJS.ErrnoException).code === "ENOENT") {
-            return { success: false, error: "Authorization file not found." };
-        }
         console.error("Error reading faculty auth data:", e);
         return { success: false, error: "Failed to read faculty authorization data." };
     }
 }
 
 
-export async function updateFacultyAuthDataAction(content: string): Promise<{ success: boolean; error?: string }> {
-    try {
-        JSON.parse(content); // Validate if the content is valid JSON
-    } catch (e) {
-        return { success: false, error: "Invalid JSON format." };
+export async function addFacultyAction(newFaculty: AuthorizedFaculty): Promise<{ success: boolean, error?: string}> {
+    if(!newFaculty.name || !newFaculty.faculty_id){
+        return { success: false, error: "Faculty name and ID are required."};
     }
-    
     try {
-        await fs.writeFile(facultyAuthPath, content, 'utf-8');
+        const authData = await readFacultyAuthData();
+        
+        const exists = authData.authorized_faculty.some(f => f.faculty_id.toLowerCase() === newFaculty.faculty_id.toLowerCase());
+        if(exists){
+            return { success: false, error: "A faculty member with this ID already exists."};
+        }
+
+        authData.authorized_faculty.push(newFaculty);
+        authData.authorized_faculty.sort((a,b) => a.name.localeCompare(b.name));
+        
+        await writeFacultyAuthData(authData);
         return { success: true };
     } catch (e: any) {
-        console.error("Error writing faculty auth data:", e);
-        return { success: false, error: "Failed to save faculty authorization data." };
+        console.error("Error adding faculty:", e);
+        return { success: false, error: "Failed to add new faculty member."};
+    }
+}
+
+export async function deleteFacultyAction(facultyId: string): Promise<{ success: boolean, error?: string}> {
+    try {
+        const authData = await readFacultyAuthData();
+        const initialCount = authData.authorized_faculty.length;
+        authData.authorized_faculty = authData.authorized_faculty.filter(f => f.faculty_id !== facultyId);
+
+        if(authData.authorized_faculty.length === initialCount){
+             return { success: false, error: "Faculty ID not found to delete."};
+        }
+
+        await writeFacultyAuthData(authData);
+        return { success: true };
+    } catch (e: any) {
+        console.error("Error deleting faculty:", e);
+        return { success: false, error: "Failed to delete faculty member."};
+    }
+}
+
+export async function updateSecureKeyAction(newKey: string): Promise<{ success: boolean, error?: string}> {
+    if(!newKey || newKey.length < 8) {
+        return { success: false, error: "Secure key must be at least 8 characters long."};
+    }
+    try {
+        const authData = await readFacultyAuthData();
+        authData.secure_key = newKey;
+        await writeFacultyAuthData(authData);
+        return { success: true };
+    } catch (e: any) {
+         console.error("Error updating secure key:", e);
+        return { success: false, error: "Failed to update secure key."};
     }
 }

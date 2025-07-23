@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition, useEffect, useCallback } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -24,7 +24,13 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { validateFacultyAction, getFacultyAuthDataAction, updateFacultyAuthDataAction } from '@/lib/actions';
+import { 
+    validateFacultyAction, 
+    getFacultyAuthDataAction, 
+    addFacultyAction,
+    deleteFacultyAction,
+    updateSecureKeyAction
+} from '@/lib/actions';
 import {
   KeyRound,
   UserCheck,
@@ -32,36 +38,61 @@ import {
   Unlock,
   ShieldAlert,
   Edit,
+  UserPlus,
+  Trash2,
+  Lock,
+  Save
 } from 'lucide-react';
-import { Textarea } from './ui/textarea';
+import type { AuthorizedFaculty } from '@/lib/types';
+import { Separator } from './ui/separator';
 
-
-const FacultyAuthSchema = z.object({
-  facultyId: z.string().min(1, 'Faculty ID is required.'),
+const LoginSchema = z.object({
   secureKey: z.string().min(1, 'Secure key is required.'),
 });
+type LoginType = z.infer<typeof LoginSchema>;
 
-type FacultyAuthType = z.infer<typeof FacultyAuthSchema>;
+const AddFacultySchema = z.object({
+    name: z.string().min(1, 'Faculty name is required.'),
+    faculty_id: z.string().min(1, 'Faculty ID is required.'),
+});
+type AddFacultyType = z.infer<typeof AddFacultySchema>;
+
+const UpdateKeySchema = z.object({
+    newSecureKey: z.string().min(8, 'New key must be at least 8 characters.'),
+});
+type UpdateKeyType = z.infer<typeof UpdateKeySchema>;
+
 
 export default function FacultyView() {
   const [isPending, startTransition] = useTransition();
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [facultyData, setFacultyData] = useState('');
+  const [facultyData, setFacultyData] = useState<AuthorizedFaculty[]>([]);
+  const [secureKey, setSecureKey] = useState('');
   const { toast } = useToast();
 
-  const form = useForm<FacultyAuthType>({
-    resolver: zodResolver(FacultyAuthSchema),
-    defaultValues: {
-      facultyId: '',
-      secureKey: '',
-    },
+  const loginForm = useForm<LoginType>({
+    resolver: zodResolver(LoginSchema),
+    defaultValues: { secureKey: '' },
   });
 
-  const fetchFacultyData = () => {
+  const addFacultyForm = useForm<AddFacultyType>({
+      resolver: zodResolver(AddFacultySchema),
+      defaultValues: { name: '', faculty_id: '' }
+  });
+
+  const updateKeyForm = useForm<UpdateKeyType>({
+      resolver: zodResolver(UpdateKeySchema),
+      defaultValues: { newSecureKey: '' }
+  })
+
+  const fetchFacultyData = useCallback(() => {
       startTransition(async () => {
         const result = await getFacultyAuthDataAction();
         if(result.success && result.data){
-            setFacultyData(result.data);
+            setFacultyData(result.data.authorized_faculty);
+            setSecureKey(result.data.secure_key);
+            // Pre-fill the update key form for convenience
+            updateKeyForm.setValue('newSecureKey', result.data.secure_key);
         } else {
             toast({
                 variant: 'destructive',
@@ -70,18 +101,15 @@ export default function FacultyView() {
             });
         }
       });
-  }
+  }, [toast, updateKeyForm]);
 
-  const onSubmit: SubmitHandler<FacultyAuthType> = (data) => {
+  const onLoginSubmit: SubmitHandler<LoginType> = (data) => {
     startTransition(async () => {
-      setIsAuthorized(false);
-      
-      const result = await validateFacultyAction(
-        data.facultyId,
-        data.secureKey
-      );
-
-      if (result.isValid) {
+      // For faculty tools, we validate against the stored secure key.
+      // The facultyId can be any valid one, or we can bypass it.
+      // Here, we'll just check the key for simplicity.
+      const facultyCheck = await getFacultyAuthDataAction();
+      if(facultyCheck.success && facultyCheck.data?.secure_key === data.secureKey){
         setIsAuthorized(true);
         fetchFacultyData();
         toast({
@@ -92,158 +120,203 @@ export default function FacultyView() {
         toast({
           variant: 'destructive',
           title: 'Validation Failed',
-          description:
-            result.error ||
-            'The provided Faculty ID or Secure Key is incorrect.',
+          description: 'The provided Secure Key is incorrect.',
         });
       }
     });
   };
 
-  const handleSave = () => {
+  const onAddFacultySubmit: SubmitHandler<AddFacultyType> = (data) => {
     startTransition(async () => {
-        const result = await updateFacultyAuthDataAction(facultyData);
-        if (result.success) {
-            toast({
-                title: 'Saved',
-                description: 'Your changes have been saved.',
-            });
+        const result = await addFacultyAction(data);
+        if(result.success){
+            toast({ title: "Success", description: "Faculty member added."});
+            addFacultyForm.reset();
+            fetchFacultyData(); // Refresh the list
         } else {
-            toast({
-                variant: 'destructive',
-                title: 'Save Failed',
-                description: result.error || 'An unexpected error occurred.',
-            });
+            toast({ variant: 'destructive', title: 'Error', description: result.error });
         }
     });
   }
 
-  return (
-    <div className="w-full mx-auto">
-      <CardHeader className="p-0 mb-4">
-        <CardDescription>
-          To edit the faculty access list, enter valid credentials to unlock the editor.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-0">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
-              <FormField
-                control={form.control}
-                name="facultyId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2 text-xs">
-                      <UserCheck /> Faculty ID
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter your Faculty ID"
-                        {...field}
-                        disabled={isPending || isAuthorized}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="secureKey"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2 text-xs">
-                      <KeyRound /> Secure Key
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Enter the secure key"
-                        {...field}
-                        disabled={isPending || isAuthorized}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            {!isAuthorized && (
-              <Button
-                type="submit"
-                className="w-full bg-primary hover:bg-primary/90"
-                disabled={isPending}
-              >
-                {isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Unlock className="mr-2 h-4 w-4" />
-                )}
-                Validate & Unlock
-              </Button>
-            )}
-          </form>
-        </Form>
+  const handleDeleteFaculty = (facultyId: string) => {
+      startTransition(async () => {
+          const result = await deleteFacultyAction(facultyId);
+           if(result.success){
+            toast({ title: "Success", description: "Faculty member removed."});
+            fetchFacultyData(); // Refresh the list
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: result.error });
+        }
+      })
+  }
+  
+  const onUpdateKeySubmit: SubmitHandler<UpdateKeyType> = (data) => {
+      startTransition(async () => {
+          const result = await updateSecureKeyAction(data.newSecureKey);
+           if(result.success){
+            toast({ title: "Success", description: "Secure key has been updated."});
+            fetchFacultyData(); // Refresh data
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: result.error });
+        }
+      });
+  }
 
-        {isPending && !facultyData && !isAuthorized &&(
-          <div className="mt-4 flex flex-col items-center justify-center gap-2 text-muted-foreground">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <p className="text-sm">Validating...</p>
-          </div>
-        )}
+  const handleLock = () => {
+      setIsAuthorized(false);
+      setFacultyData([]);
+      setSecureKey('');
+      loginForm.reset();
+      addFacultyForm.reset();
+      updateKeyForm.reset();
+      toast({
+          title: 'Locked',
+          description: 'The faculty management tool is now locked.',
+      });
+  }
 
-        <div className="mt-4">
-          {isAuthorized ? (
-            <div className="animate-in fade-in duration-500 space-y-4">
-               <Textarea
-                placeholder="Loading document content..."
-                value={facultyData}
-                onChange={(e) => setFacultyData(e.target.value)}
-                rows={8}
-                className="bg-green-50/50 border-green-200 focus:ring-green-500 font-mono text-xs"
-                disabled={isPending}
-              />
-              <div className="flex flex-col sm:flex-row gap-2">
+
+  if (!isAuthorized) {
+    return (
+       <Card className="border-0 shadow-none">
+        <CardHeader className="p-0 mb-4 text-center">
+            <CardTitle>Faculty Tools</CardTitle>
+            <CardDescription>
+            Enter the secure key to manage the faculty list.
+            </CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+            <Form {...loginForm}>
+            <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                <FormField
+                    control={loginForm.control}
+                    name="secureKey"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className="sr-only">Secure Key</FormLabel>
+                        <FormControl>
+                        <Input
+                            type="password"
+                            placeholder="Enter the secure key"
+                            {...field}
+                            disabled={isPending}
+                        />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
                 <Button
+                    type="submit"
                     className="w-full"
-                    onClick={handleSave}
                     disabled={isPending}
                 >
-                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Edit className="mr-2 h-4 w-4" />}
-                    Save Changes
+                    {isPending ? <Loader2 className="animate-spin" /> : <Unlock/>}
+                    Validate & Unlock
                 </Button>
-                 <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => {
-                    setIsAuthorized(false);
-                    setFacultyData('');
-                    form.reset({
-                        facultyId: '',
-                        secureKey: '',
-                    });
-                    toast({
-                        title: 'Locked',
-                        description: 'The document is now in read-only mode.',
-                    });
-                    }}
-                >
-                    Lock Document
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center p-4 rounded-lg bg-secondary border border-dashed mt-4">
-              <ShieldAlert className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-              <h3 className="font-semibold">Editor is Locked</h3>
-              <p className="text-sm text-muted-foreground">
-                Provide credentials to edit.
-              </p>
-            </div>
-          )}
+            </form>
+            </Form>
+        </CardContent>
+       </Card>
+    )
+  }
+
+  return (
+    <div className="w-full mx-auto space-y-6">
+        <div>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-lg">Add New Faculty</CardTitle>
+                </CardHeader>
+                <CardContent>
+                     <Form {...addFacultyForm}>
+                        <form onSubmit={addFacultyForm.handleSubmit(onAddFacultySubmit)} className="flex flex-col sm:flex-row items-start gap-4">
+                            <FormField control={addFacultyForm.control} name="name" render={({ field }) => (
+                                <FormItem className="flex-1 w-full">
+                                    <FormLabel>Full Name</FormLabel>
+                                    <FormControl><Input placeholder="e.g., Jane Doe" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                            <FormField control={addFacultyForm.control} name="faculty_id" render={({ field }) => (
+                                <FormItem className="flex-1 w-full">
+                                    <FormLabel>Faculty ID</FormLabel>
+                                    <FormControl><Input placeholder="e.g., F12345" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                             <div className="self-end pt-1">
+                                <Button type="submit" disabled={isPending} className="w-full sm:w-auto mt-4">
+                                    {isPending ? <Loader2 className="animate-spin" /> : <UserPlus />} Add Faculty
+                                </Button>
+                             </div>
+                        </form>
+                    </Form>
+                </CardContent>
+            </Card>
         </div>
-      </CardContent>
+
+        <Separator />
+
+        <div>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-lg">Authorized Faculty List</CardTitle>
+                    <CardDescription>
+                        {isPending && !facultyData.length ? 'Loading...' : `Found ${facultyData.length} faculty member(s).`}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                        {facultyData.map(faculty => (
+                            <div key={faculty.faculty_id} className="flex items-center justify-between p-2 rounded-md bg-muted">
+                                <div>
+                                    <p className="font-medium">{faculty.name}</p>
+                                    <p className="text-sm text-muted-foreground">{faculty.faculty_id}</p>
+                                </div>
+                                <Button variant="ghost" size="icon" onClick={() => handleDeleteFaculty(faculty.faculty_id)} disabled={isPending}>
+                                    <Trash2 className="text-destructive h-4 w-4"/>
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+        
+         <Separator />
+
+        <div>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-lg">Manage Secure Key</CardTitle>
+                </CardHeader>
+                <CardContent>
+                     <Form {...updateKeyForm}>
+                        <form onSubmit={updateKeyForm.handleSubmit(onUpdateKeySubmit)} className="flex items-start gap-4">
+                            <FormField control={updateKeyForm.control} name="newSecureKey" render={({ field }) => (
+                                <FormItem className="flex-1">
+                                    <FormLabel>Secure Key</FormLabel>
+                                    <FormControl><Input type="password" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                            <div className="self-end pt-1">
+                                <Button type="submit" disabled={isPending} className="mt-4">
+                                    {isPending ? <Loader2 className="animate-spin" /> : <Save />} Update Key
+                                </Button>
+                            </div>
+                        </form>
+                    </Form>
+                </CardContent>
+            </Card>
+        </div>
+
+
+        <Button variant="destructive" onClick={handleLock} className="w-full">
+            <Lock/> Lock Tools
+        </Button>
     </div>
   );
 }
