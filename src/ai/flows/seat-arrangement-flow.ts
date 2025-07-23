@@ -26,6 +26,28 @@ function dataUriToBuffer(dataUri: string): Buffer {
     return Buffer.from(base64, 'base64');
 }
 
+// Flexible header mapping
+const headerMapping: { [key: string]: (keyof Student)[] } = {
+    name: ['name', 'studentname', 'fullname'],
+    hallTicketNumber: ['hallticketnumber', 'hallticket', 'ticketnumber', 'htno'],
+    branch: ['branch', 'department', 'stream'],
+    contactNumber: ['contactnumber', 'phone', 'phonenumber', 'mobile'],
+};
+
+// Function to find the header key from the mapping
+function findHeaderKey(header: string, headers: string[]): string | undefined {
+    const normalizedHeader = header.toLowerCase().replace(/[^a-z0-9]/g, '');
+    for(const key of headers) {
+        const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const possibleKeys = headerMapping[normalizedHeader as keyof typeof headerMapping] || [normalizedHeader];
+        if (possibleKeys.includes(normalizedKey)) {
+            return key;
+        }
+    }
+    return undefined;
+}
+
+
 async function parseStudentsFromCSV(csvData: string): Promise<Student[]> {
     return new Promise((resolve, reject) => {
         Papa.parse(csvData, {
@@ -33,24 +55,27 @@ async function parseStudentsFromCSV(csvData: string): Promise<Student[]> {
             skipEmptyLines: true,
             transformHeader: header => header.trim(),
             complete: (results) => {
-                 if (results.errors.length) {
+                if (results.errors.length) {
                     console.error("CSV Parsing Errors:", results.errors);
                     return reject(new Error("Failed to parse CSV file. Please check the format."));
                 }
-                
-                const requiredFields = ['name', 'hallTicketNumber', 'branch', 'contactNumber'];
-                const headers = results.meta.fields;
 
-                if(!headers || !requiredFields.every(field => headers.includes(field))) {
-                    return reject(new Error(`CSV must contain the headers: ${requiredFields.join(', ')}`));
+                const parsedHeaders = results.meta.fields || [];
+                
+                const nameHeader = findHeaderKey('name', parsedHeaders);
+                const hallTicketHeader = findHeaderKey('hallTicketNumber', parsedHeaders);
+                const branchHeader = findHeaderKey('branch', parsedHeaders);
+                const contactHeader = findHeaderKey('contactNumber', parsedHeaders);
+
+                if (!nameHeader || !hallTicketHeader || !branchHeader || !contactHeader) {
+                    return reject(new Error("CSV must contain headers for Name, Hall Ticket Number, Branch, and Contact Number."));
                 }
 
-                // @ts-ignore
-                const students: Student[] = results.data.map(row => ({
-                    name: row.name || '',
-                    hallTicketNumber: row.hallTicketNumber || '',
-                    branch: row.branch || '',
-                    contactNumber: row.contactNumber || '',
+                const students: Student[] = (results.data as any[]).map(row => ({
+                    name: row[nameHeader] || '',
+                    hallTicketNumber: row[hallTicketHeader] || '',
+                    branch: row[branchHeader] || '',
+                    contactNumber: row[contactHeader] || '',
                 })).filter(s => s.name && s.hallTicketNumber);
                 
                 resolve(students);
@@ -62,21 +87,42 @@ async function parseStudentsFromCSV(csvData: string): Promise<Student[]> {
     });
 }
 
+
 async function parseStudentsFromPDF(pdfBuffer: Buffer): Promise<Student[]> {
     const pdf = (await import('pdf-parse')).default;
     const data = await pdf(pdfBuffer);
     const lines = data.text.split('\n').filter(line => line.trim() !== '');
 
-    // Heuristic to parse students from text - might need adjustment for different PDF layouts
-    const students: Student[] = lines.slice(1) // Assuming first line is header
+    if (lines.length < 2) {
+      throw new Error("PDF content is not in a valid table format.");
+    }
+
+    const headers = lines[0].trim().split(/\s+/);
+    
+    const nameHeader = findHeaderKey('name', headers);
+    const hallTicketHeader = findHeaderKey('hallTicketNumber', headers);
+    const branchHeader = findHeaderKey('branch', headers);
+    const contactHeader = findHeaderKey('contactNumber', headers);
+
+    if (!nameHeader || !hallTicketHeader || !branchHeader || !contactHeader) {
+        throw new Error("PDF must contain headers for Name, Hall Ticket Number, Branch, and Contact Number.");
+    }
+    
+    const nameIndex = headers.indexOf(nameHeader);
+    const hallTicketIndex = headers.indexOf(hallTicketHeader);
+    const branchIndex = headers.indexOf(branchHeader);
+    const contactIndex = headers.indexOf(contactHeader);
+
+
+    const students: Student[] = lines.slice(1)
         .map(line => {
             const parts = line.trim().split(/\s+/);
-            if(parts.length < 4) return null; // Basic validation
+            if(parts.length < headers.length) return null;
             return {
-                name: parts.slice(0, -3).join(' '), // Handle names with spaces
-                hallTicketNumber: parts[parts.length - 3],
-                branch: parts[parts.length - 2],
-                contactNumber: parts[parts.length - 1],
+                name: parts[nameIndex],
+                hallTicketNumber: parts[hallTicketIndex],
+                branch: parts[branchIndex],
+                contactNumber: parts[contactIndex],
             };
         })
         .filter((s): s is Student => s !== null && !!s.hallTicketNumber);
