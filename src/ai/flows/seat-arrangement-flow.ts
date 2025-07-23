@@ -26,23 +26,18 @@ function dataUriToBuffer(dataUri: string): Buffer {
     return Buffer.from(base64, 'base64');
 }
 
-// Flexible header mapping to find student data fields.
-// Keys are the internal field names, values are arrays of possible header names (case-insensitive).
-const headerMapping: Record<keyof Student, string[]> = {
-  name: ['name', 'studentname', 'fullname', 'student name', 'nameofstudent'],
-  hallTicketNumber: ['hallticketnumber', 'hallticket', 'ticketnumber', 'htno', 'rollno', 'roll number'],
-  branch: ['branch', 'department', 'stream'],
-  contactNumber: ['contactnumber', 'phone', 'phonenumber', 'mobile', 'contact no'],
-};
+// Normalizes a header string for fuzzy matching.
+function normalizeHeader(header: string): string {
+    return header.toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9]/g, '').trim();
+}
 
-// Function to find the actual header from the file that corresponds to our internal field.
-function findHeaderKey(field: keyof Student, headers: string[]): string | undefined {
-    const possibleNames = headerMapping[field];
-    for (const header of headers) {
-        const normalizedHeader = header.toLowerCase().replace(/[^a-z0-9]/g, '');
-        if (possibleNames.includes(normalizedHeader)) {
-            return header; // Return the original header name to access the data
-        }
+// Finds the best-matching original header from a list of possibilities.
+function findHeaderMatch(headers: string[], keywords: string[]): string | undefined {
+    const normalizedHeaders = headers.map(normalizeHeader);
+    for (const keyword of keywords) {
+        const normKeyword = normalizeHeader(keyword);
+        const index = normalizedHeaders.findIndex(h => h.includes(normKeyword));
+        if (index !== -1) return headers[index]; // Return original header
     }
     return undefined;
 }
@@ -60,12 +55,12 @@ async function parseStudentsFromCSV(csvData: string): Promise<Student[]> {
                     return reject(new Error("Failed to parse CSV file. Please check the format."));
                 }
 
-                const parsedHeaders = results.meta.fields || [];
+                const headers = results.meta.fields || [];
                 
-                const nameHeader = findHeaderKey('name', parsedHeaders);
-                const hallTicketHeader = findHeaderKey('hallTicketNumber', parsedHeaders);
-                const branchHeader = findHeaderKey('branch', parsedHeaders);
-                const contactHeader = findHeaderKey('contactNumber', parsedHeaders);
+                const nameHeader = findHeaderMatch(headers, ["name", "studentname", "fullname", "nameofstudent"]);
+                const hallTicketHeader = findHeaderMatch(headers, ["hallticketnumber", "hallticket", "ticketnumber", "htno", "rollno", "roll number"]);
+                const branchHeader = findHeaderMatch(headers, ["branch", "department", "stream"]);
+                const contactHeader = findHeaderMatch(headers, ["contactnumber", "phone", "phonenumber", "mobile", "contact no"]);
 
                 if (!nameHeader) return reject(new Error("Could not find a 'Name' column. Please ensure your CSV has a column for student names (e.g., 'Name', 'FullName')."));
                 if (!hallTicketHeader) return reject(new Error("Could not find a 'Hall Ticket Number' column. Please ensure your CSV has a column for hall tickets (e.g., 'HallTicket', 'Roll No')."));
@@ -102,10 +97,11 @@ async function parseStudentsFromPDF(pdfBuffer: Buffer): Promise<Student[]> {
     // Treat the first line as headers, trim each header.
     const headers = lines[0].trim().split(/\s{2,}/).map(h => h.trim());
     
-    const nameHeader = findHeaderKey('name', headers);
-    const hallTicketHeader = findHeaderKey('hallTicketNumber', headers);
-    const branchHeader = findHeaderKey('branch', headers);
-    const contactHeader = findHeaderKey('contactNumber', headers);
+    const nameHeader = findHeaderMatch(headers, ["name", "studentname", "fullname", "nameofstudent"]);
+    const hallTicketHeader = findHeaderMatch(headers, ["hallticketnumber", "hallticket", "ticketnumber", "htno", "rollno", "roll number"]);
+    const branchHeader = findHeaderMatch(headers, ["branch", "department", "stream"]);
+    const contactHeader = findHeaderMatch(headers, ["contactnumber", "phone", "phonenumber", "mobile", "contact no"]);
+
 
     if (!nameHeader) throw new Error("Could not find a 'Name' column in the PDF. Please ensure your PDF has a column for student names.");
     if (!hallTicketHeader) throw new Error("Could not find a 'Hall Ticket Number' column in the PDF. Please ensure your PDF has a column for hall tickets.");
