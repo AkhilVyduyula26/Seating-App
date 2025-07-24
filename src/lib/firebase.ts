@@ -27,8 +27,9 @@ export const getMessagingToken = async () => {
     if (!messaging) return currentToken;
     
     try {
-        currentToken = await getToken(messaging, { vapidKey: 'YOUR_VAPID_KEY' });
-        // You need to generate this key in your Firebase project settings -> Cloud Messaging
+        // IMPORTANT: You need to generate this VAPID key in your Firebase project settings
+        // Project settings > Cloud Messaging > Web configuration > Generate key pair
+        currentToken = await getToken(messaging, { vapidKey: 'YOUR_VAPID_KEY_HERE' });
     } catch (error) {
         console.error('An error occurred while retrieving token. ', error);
     }
