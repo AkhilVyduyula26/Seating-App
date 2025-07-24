@@ -278,14 +278,11 @@ const seatingArrangementFlow = ai.defineFlow(
     
     seatingPlan.sort((a,b) => a.hallTicketNumber.localeCompare(b.hallTicketNumber));
 
-    const [startHour, startMinute] = (layout.examTimings.split('to')[0].trim().match(/\d+/g) || ["09", "00"]);
-    const [endHour, endMinute] = (layout.examTimings.split('to')[1].trim().match(/\d+/g) || ["12", "00"]);
 
     const examConfig: z.infer<typeof ExamConfigSchema> = {
         startDate: layout.startDate,
         endDate: layout.endDate,
-        startTime: { hour: startHour, minute: startMinute },
-        endTime: { hour: endHour, minute: endMinute },
+        examTimings: layout.examTimings,
         useSamePlan: true,
     };
 

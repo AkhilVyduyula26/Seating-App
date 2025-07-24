@@ -87,13 +87,18 @@ export default function AdminDashboard() {
       blocks: [{ name: "Main Block", floors: [{ number: 1, rooms: [{ number: "101", benches: 15, studentsPerBench: 2 }] }] }],
       startDate: new Date(),
       endDate: new Date(),
-      examTimings: "09:00 AM to 12:00 PM"
+      examTimings: [{ value: "09:00 AM to 12:00 PM" }]
     }
   });
 
   const { fields: blockFields, append: appendBlock, remove: removeBlock } = useFieldArray({
     control: layoutForm.control,
     name: "blocks"
+  });
+  
+  const { fields: timingFields, append: appendTiming, remove: removeTiming } = useFieldArray({
+      control: layoutForm.control,
+      name: "examTimings"
   });
 
   const generationForm = useForm<GenerationFormType>({
@@ -475,7 +480,7 @@ export default function AdminDashboard() {
 
               <Separator />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <FormField control={layoutForm.control} name="startDate" render={({ field }) => (
                   <FormItem className="flex flex-col pt-2">
                     <FormLabel>Exam Start Date</FormLabel>
@@ -514,14 +519,45 @@ export default function AdminDashboard() {
                     <FormMessage />
                   </FormItem>
                 )}/>
-                 <FormField control={layoutForm.control} name="examTimings" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Exam Timings</FormLabel>
-                        <FormControl><Input placeholder="e.g., 09:00 AM to 12:00 PM" {...field} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-              </div>
+                </div>
+                <div>
+                    <FormLabel>Exam Timings</FormLabel>
+                    <div className="space-y-2">
+                        {timingFields.map((field, index) => (
+                            <FormField 
+                                key={field.id}
+                                control={layoutForm.control}
+                                name={`examTimings.${index}.value`}
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <div className="flex items-center gap-2">
+                                            <FormControl>
+                                                <Input placeholder="e.g., 09:00 AM to 12:00 PM" {...field}/>
+                                            </FormControl>
+                                            {timingFields.length > 1 && (
+                                                <Button variant="ghost" size="icon" onClick={() => removeTiming(index)}>
+                                                    <X className="h-4 w-4"/>
+                                                </Button>
+                                            )}
+                                        </div>
+                                        <FormMessage/>
+                                    </FormItem>
+                                )}
+                            />
+                        ))}
+                    </div>
+                     <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => appendTiming({ value: "" })}
+                    >
+                        <PlusCircle className="mr-2 h-4 w-4"/>
+                        Add Time Slot
+                    </Button>
+                </div>
+
 
               <Button type="submit" className="w-full">
                 Continue to Step 2
@@ -725,8 +761,3 @@ const RoomsField = ({ blockIndex, floorIndex, control, register, getValues, setV
         </div>
     );
 }
-
-    
-
-    
-

@@ -49,6 +49,7 @@ export async function createSeatingPlanAction(
         // Dates are converted to string for serialization
         startDate: format(layoutConfig.startDate, 'yyyy-MM-dd'),
         endDate: format(layoutConfig.endDate, 'yyyy-MM-dd'),
+        examTimings: layoutConfig.examTimings.map(t => t.value)
       },
     };
     
@@ -189,5 +190,3 @@ export async function updateSecureKeyAction(newKey: string): Promise<{ success: 
         return { success: false, error: "Failed to update secure key."};
     }
 }
-
-    

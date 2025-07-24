@@ -5,12 +5,13 @@ import { useEffect, useState, useTransition } from "react";
 import { getSeatingDataAction } from "@/lib/actions";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, User, Home, MapPin, Building, School, Armchair, AlertCircle, BellRing } from "lucide-react";
+import { Loader2, User, Home, MapPin, Building, School, Armchair, AlertCircle, BellRing, Clock } from "lucide-react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { format } from "date-fns";
 import { ExamConfig, SeatingAssignment } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { Separator } from "./ui/separator";
 
 interface DisplayExamConfig extends Omit<ExamConfig, 'startDate' | 'endDate'> {
     startDate: Date;
@@ -127,7 +128,7 @@ export default function StudentDashboard({ hallTicketNumber, onBackToHome }: { h
                     Hello, {studentData.name}! Here is your assigned seat for the upcoming exams.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div className="flex items-center gap-2 p-3 rounded-md bg-muted">
                         <MapPin className="text-primary" />
@@ -159,22 +160,31 @@ export default function StudentDashboard({ hallTicketNumber, onBackToHome }: { h
                     </div>
                 </div>
 
+                <Separator/>
+
                 {examConfig && (
-                    <>
-                        <div className="space-y-2">
-                            <h4 className="font-semibold">Exam Schedule:</h4>
-                            <div className="flex flex-wrap gap-2">
-                                {examDates.map(date => (
-                                    <Badge key={date.toISOString()} variant="secondary">{format(date, 'EEE, MMM d')}</Badge>
-                                ))}
-                            </div>
-                            <p className="text-xs text-muted-foreground">Your seat remains the same for all dates listed above.</p>
+                    <div className="space-y-4">
+                        <h4 className="font-semibold text-base">Exam Schedule</h4>
+                        <div className="space-y-3">
+                            {examDates.map(date => (
+                                <div key={date.toISOString()} className="flex items-start gap-4">
+                                    <Badge variant="secondary" className="text-center text-sm w-24 h-auto py-2 flex-col shrink-0">
+                                       <span className="font-bold">{format(date, 'EEE')}</span>
+                                       <span className="text-xs">{format(date, 'MMM d')}</span>
+                                    </Badge>
+                                    <div className="flex flex-col gap-1.5 text-sm">
+                                        {examConfig.examTimings.map((timing, index) => (
+                                            <div key={index} className="flex items-center gap-2">
+                                                <Clock className="w-4 h-4 text-muted-foreground"/>
+                                                <span>{timing}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                        <div className="space-y-2">
-                            <h4 className="font-semibold">Exam Timings:</h4>
-                            <p className="text-sm">Daily from <strong>{examConfig.startTime.hour}:{examConfig.startTime.minute}</strong> to <strong>{examConfig.endTime.hour}:{examConfig.endTime.minute}</strong></p>
-                        </div>
-                    </>
+                        <p className="text-xs text-muted-foreground pt-2">Your seat remains the same for all dates and time slots listed above.</p>
+                    </div>
                 )}
             </CardContent>
             <CardFooter>

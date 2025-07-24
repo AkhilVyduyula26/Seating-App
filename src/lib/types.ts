@@ -25,8 +25,7 @@ export type SeatingAssignment = z.infer<typeof SeatingAssignmentSchema>;
 export const ExamConfigSchema = z.object({
     startDate: z.string().describe("The start date of the exam period in YYYY-MM-DD format."),
     endDate: z.string().describe("The end date of the exam period in YYYY-MM-DD format."),
-    startTime: z.object({ hour: z.string(), minute: z.string() }),
-    endTime: z.object({ hour: z.string(), minute: z.string() }),
+    examTimings: z.array(z.string()).describe("An array of exam timing slots for each day."),
     useSamePlan: z.boolean(),
 });
 export type ExamConfig = z.infer<typeof ExamConfigSchema>;
@@ -55,7 +54,7 @@ export const LayoutFormSchema = z.object({
   blocks: z.array(BlockSchema).min(1, 'You must define at least one block.'),
   startDate: z.date({ required_error: "A start date is required." }),
   endDate: z.date({ required_error: "An end date is required." }),
-  examTimings: z.string().min(1, "Exam timings are required."),
+  examTimings: z.array(z.object({ value: z.string().min(1, 'Timing slot cannot be empty.')})).min(1, 'At least one exam timing is required.'),
 });
 export type LayoutConfig = z.infer<typeof LayoutFormSchema>;
 
@@ -72,9 +71,10 @@ export const GenerateSeatingArrangementInputSchema = z.object({
   studentListDataUris: z.array(z.string()).describe(
       "An array of student list files as data URIs. Can be CSV or PDF."
     ),
-  layoutConfig: LayoutFormSchema.omit({ startDate: true, endDate: true }).extend({
+  layoutConfig: LayoutFormSchema.omit({ startDate: true, endDate: true, examTimings: true }).extend({
       startDate: z.string(),
       endDate: z.string(),
+      examTimings: z.array(z.string()),
   })
 });
 export type GenerateSeatingArrangementInput = z.infer<typeof GenerateSeatingArrangementInputSchema>;
@@ -109,5 +109,3 @@ export const AuthorizedFacultySchema = z.object({
   faculty_id: z.string(),
 });
 export type AuthorizedFaculty = z.infer<typeof AuthorizedFacultySchema>;
-
-    
