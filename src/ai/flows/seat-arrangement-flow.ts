@@ -259,13 +259,10 @@ const seatingArrangementFlow = ai.defineFlow(
         
         if (studentToAssign) {
             const seatNumber = i + 1;
-            const bench = Math.ceil(seatNumber / 2);
-            const side = seatNumber % 2 !== 0 ? 'L' : 'R';
-            
              seatingPlan.push({
                 ...studentToAssign,
                 ...availableSeats[i],
-                benchNumber: `${bench}${side}`,
+                benchNumber: seatNumber,
             });
             
             // Move to the next branch pool for the next seat

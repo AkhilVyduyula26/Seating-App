@@ -293,14 +293,7 @@ export default function AdminDashboard() {
           }
           acc[room].push(student);
           // Sort students by bench number within each room
-          acc[room].sort((a,b) => {
-            const numA = parseInt(a.benchNumber.slice(0, -1), 10);
-            const numB = parseInt(b.benchNumber.slice(0, -1), 10);
-            if (numA !== numB) {
-                return numA - numB;
-            }
-            return a.benchNumber.slice(-1).localeCompare(b.benchNumber.slice(-1));
-          });
+          acc[room].sort((a,b) => a.benchNumber - b.benchNumber);
           return acc;
       }, {} as Record<string, SeatingAssignment[]>);
   };
