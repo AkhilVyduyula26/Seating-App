@@ -231,23 +231,120 @@ export default function AdminDashboard() {
     doc.save('room_occupancy_summary.pdf');
   };
 
-  const handleDownloadRoomwisePdf = () => {
+  const handleDownloadAttendanceSheetPdf = () => {
     if(!seatingData) return;
 
     const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
     const studentsByRoom = groupStudentsByRoom(seatingData.plan);
 
-    const collegeName = "SmartSeat College of Engineering"; // Replace with actual or dynamic name
-    const examTitle = "Mid Term Examinations"; // Replace with actual or dynamic name
+    const logoUrl = 'https://www.mru.edu.in/wp-content/uploads/2023/10/logo-1.png'; // Publicly available logo
+
+    // This is a simplified way to get unique branches.
+    const allBranches = [...new Set(seatingData.plan.map(s => s.branch))];
+
+    Object.entries(studentsByRoom).forEach(([room, students], index) => {
+        if (index > 0) {
+            doc.addPage();
+        }
+
+        // Add logo
+        // Note: The logo might not load if there are CORS issues. Using a base64 string is more reliable.
+        // For this example, we assume the public URL works.
+        try {
+            // Since jsPDF image support can be tricky with async, this is a best-effort.
+            // A more robust solution might involve fetching the image to a data URI first.
+            doc.addImage(logoUrl, 'PNG', 15, 8, 30, 15);
+        } catch (e) {
+            console.error("Could not add logo to PDF:", e);
+        }
+        
+        // Add header
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text("MALLA REDDY UNIVERSITY", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+        doc.setFont('helvetica', 'normal');
+
+        doc.setFontSize(12);
+        doc.text(`Room No: ${room}`, 15, 30);
+        doc.text(`Date: ${format(seatingData.examConfig.startDate, 'dd/MM/yyyy')}`, doc.internal.pageSize.getWidth() - 15, 30, { align: 'right' });
+
+        let startY = 38;
+
+        // Absentees Section
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text("Absentees Details", 15, startY);
+        startY += 5;
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        
+        allBranches.forEach(branch => {
+            doc.text(`${branch} Absentees Roll Numbers:`, 15, startY);
+            startY += 5;
+            doc.line(15, startY, doc.internal.pageSize.getWidth() - 15, startY); // line
+            startY += 5;
+             doc.line(15, startY, doc.internal.pageSize.getWidth() - 15, startY); // line
+            startY += 5;
+        });
+
+        startY += 2; // Extra space before table
+
+
+        const tableData = students.map((s, idx) => [
+            idx + 1, // S.No
+            s.name,
+            s.hallTicketNumber, // Roll No
+            s.branch,
+            s.benchNumber, // Seat No
+            '' // for signature
+        ]);
+
+        autoTable(doc, {
+            head: [['S.No', 'Name', 'Roll No', 'Branch', 'Seat No', 'Signature']],
+            body: tableData,
+            startY: startY,
+            theme: 'grid',
+            headStyles: {
+                fillColor: [22, 160, 133],
+                textColor: 255,
+                fontStyle: 'bold',
+            },
+            styles: {
+                cellPadding: 2,
+                fontSize: 9,
+            },
+            columnStyles: {
+                0: { cellWidth: 10 }, // S.No
+                1: { cellWidth: 'auto' }, // Name
+                2: { cellWidth: 30 }, // Roll No
+                3: { cellWidth: 18 }, // Branch
+                4: { cellWidth: 18 }, // Seat No
+                5: { cellWidth: 30 }, // Signature
+            }
+        });
+    });
+
+    doc.save('attendance_sheets.pdf');
+  };
+  
+    const handleDownloadRoomwiseListPdf = () => {
+    if(!seatingData) return;
+
+    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+    const studentsByRoom = groupStudentsByRoom(seatingData.plan);
+
+    const collegeName = "MALLA REDDY UNIVERSITY";
+    const examTitle = "Mid Term Examinations - Seating Arrangement";
 
     Object.entries(studentsByRoom).forEach(([room, students], index) => {
         if (index > 0) {
             doc.addPage();
         }
         
-        // Add header
         doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
         doc.text(collegeName, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+        doc.setFont('helvetica', 'normal');
         doc.setFontSize(12);
         doc.text(examTitle, doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
         
@@ -260,11 +357,12 @@ export default function AdminDashboard() {
             s.name,
             s.hallTicketNumber,
             s.branch,
+            '', // for booklet number
             '' // for signature
         ]);
 
         autoTable(doc, {
-            head: [['Bench', 'Name', 'Hall Ticket Number', 'Branch', 'Signature']],
+            head: [['Bench', 'Name', 'Hall Ticket Number', 'Branch', 'Booklet Number', 'Signature']],
             body: tableData,
             startY: 35,
             theme: 'grid',
@@ -275,19 +373,20 @@ export default function AdminDashboard() {
             },
             styles: {
                 cellPadding: 2,
-                fontSize: 10,
+                fontSize: 9,
             },
             columnStyles: {
-                0: { cellWidth: 20 },
+                0: { cellWidth: 15 },
                 1: { cellWidth: 'auto' },
-                2: { cellWidth: 35 },
+                2: { cellWidth: 30 },
                 3: { cellWidth: 20 },
-                4: { cellWidth: 30 },
+                4: { cellWidth: 25 },
+                5: { cellWidth: 25 },
             }
         });
     });
 
-    doc.save('roomwise_student_list.pdf');
+    doc.save('roomwise_seating_list.pdf');
   };
 
   const groupStudentsByRoom = (plan: SeatingAssignment[]) => {
@@ -331,14 +430,22 @@ export default function AdminDashboard() {
                     <span>Generated Seating Plan</span>
                 </CardTitle>
                 <CardDescription>
-                    The seating plan has been successfully generated.
+                    The seating plan has been successfully generated. Review, download, or delete the plan below.
                 </CardDescription>
             </CardHeader>
             <CardContent>
                 <SeatingTable data={seatingData.plan} />
             </CardContent>
-            <CardFooter>
-                 <Button onClick={handleDelete} variant="destructive" disabled={isDeleting}>
+            <CardFooter className="flex flex-wrap gap-2">
+                 <Button onClick={handleDownloadAttendanceSheetPdf} variant="outline">
+                    <Download className="mr-2" />
+                    Download Attendance Sheets
+                </Button>
+                <Button onClick={handleDownloadRoomwiseListPdf} variant="outline">
+                    <Download className="mr-2" />
+                    Download Room Lists
+                </Button>
+                 <Button onClick={handleDelete} variant="destructive" disabled={isDeleting} className="ml-auto">
                     {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2" />}
                     Delete Plan
                 </Button>
@@ -381,20 +488,14 @@ export default function AdminDashboard() {
         </Card>
 
         <Card className="shadow-lg">
-             <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle className="flex items-center gap-2">
-                        <List />
-                       <span>Room-wise Student List</span>
-                    </CardTitle>
-                    <CardDescription>
-                        Detailed student seating arrangement for each room.
-                    </CardDescription>
-                </div>
-                 <Button onClick={handleDownloadRoomwisePdf} variant="outline" size="sm">
-                    <Download className="mr-2 h-4 w-4" />
-                    Download Room-wise List PDF
-                </Button>
+             <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <List />
+                    <span>Room-wise Student List</span>
+                </CardTitle>
+                <CardDescription>
+                    Detailed student seating arrangement for each room.
+                </CardDescription>
             </CardHeader>
              <CardContent className="space-y-6">
                  {Object.entries(studentsByRoom).map(([room, students]) => (
@@ -761,3 +862,5 @@ const RoomsField = ({ blockIndex, floorIndex, control, register, getValues, setV
         </div>
     );
 }
+
+    
