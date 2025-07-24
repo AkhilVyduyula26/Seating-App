@@ -84,7 +84,7 @@ export default function AdminDashboard() {
   const layoutForm = useForm<LayoutFormType>({
     resolver: zodResolver(LayoutFormSchema),
     defaultValues: {
-      blocks: [{ name: "Main Block", floors: [{ number: 1, rooms: [{ number: "101", benches: 15, studentsPerBench: 1 }] }] }],
+      blocks: [{ name: "Main Block", floors: [{ number: 1, rooms: [{ number: "101", benches: 15, studentsPerBench: 2 }] }] }],
       startDate: new Date(),
       endDate: new Date(),
       examTimings: "09:00 AM to 12:00 PM"
@@ -251,7 +251,8 @@ export default function AdminDashboard() {
 
 
         const tableData = students.map(s => [
-            s.benchNumber,
+            Math.ceil(s.benchNumber / 2),
+            s.benchNumber % 2 !== 0 ? 'Left' : 'Right',
             s.name,
             s.hallTicketNumber,
             s.branch,
@@ -259,7 +260,7 @@ export default function AdminDashboard() {
         ]);
 
         autoTable(doc, {
-            head: [['Bench', 'Name', 'Hall Ticket Number', 'Branch', 'Signature']],
+            head: [['Bench', 'Corner', 'Name', 'Hall Ticket Number', 'Branch', 'Signature']],
             body: tableData,
             startY: 35,
             theme: 'grid',
@@ -274,10 +275,11 @@ export default function AdminDashboard() {
             },
             columnStyles: {
                 0: { cellWidth: 15 },
-                1: { cellWidth: 'auto' },
-                2: { cellWidth: 35 },
-                3: { cellWidth: 20 },
-                4: { cellWidth: 30 },
+                1: { cellWidth: 15 },
+                2: { cellWidth: 'auto' },
+                3: { cellWidth: 35 },
+                4: { cellWidth: 20 },
+                5: { cellWidth: 30 },
             }
         });
     });
@@ -392,6 +394,7 @@ export default function AdminDashboard() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Bench</TableHead>
+                                        <TableHead>Corner</TableHead>
                                         <TableHead>Name</TableHead>
                                         <TableHead>Roll Number</TableHead>
                                         <TableHead>Branch</TableHead>
@@ -401,7 +404,8 @@ export default function AdminDashboard() {
                                 <TableBody>
                                     {students.map(student => (
                                         <TableRow key={student.hallTicketNumber}>
-                                            <TableCell>{student.benchNumber}</TableCell>
+                                            <TableCell>{Math.ceil(student.benchNumber / 2)}</TableCell>
+                                            <TableCell>{student.benchNumber % 2 !== 0 ? 'Left' : 'Right'}</TableCell>
                                             <TableCell>{student.name}</TableCell>
                                             <TableCell>{student.hallTicketNumber}</TableCell>
                                             <TableCell>{student.branch}</TableCell>
@@ -640,7 +644,7 @@ const FloorsField = ({ blockIndex, control, register, getValues, setValue }: { b
                 type="button"
                 variant="secondary"
                 size="sm"
-                onClick={() => append({ number: fields.length + 1, rooms: [{ number: "", benches: 10, studentsPerBench: 1}] })}
+                onClick={() => append({ number: fields.length + 1, rooms: [{ number: "", benches: 10, studentsPerBench: 2}] })}
                 className="flex items-center gap-2"
             >
                 <PlusCircle /> Add Floor
@@ -693,7 +697,7 @@ const RoomsField = ({ blockIndex, floorIndex, control, register, getValues, setV
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel className="text-xs">Students/Bench</FormLabel>
-                                <FormControl><Input type="number" placeholder="1" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)}/></FormControl>
+                                <FormControl><Input type="number" placeholder="2" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)}/></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )}
@@ -709,7 +713,7 @@ const RoomsField = ({ blockIndex, floorIndex, control, register, getValues, setV
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => append({ number: "", benches: 10, studentsPerBench: 1})}
+                onClick={() => append({ number: "", benches: 10, studentsPerBench: 2})}
                 className="flex items-center gap-2"
             >
                 <PlusCircle /> Add Room

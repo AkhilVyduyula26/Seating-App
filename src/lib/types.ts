@@ -34,7 +34,7 @@ export type ExamConfig = z.infer<typeof ExamConfigSchema>;
 export const RoomSchema = z.object({
   number: z.string().min(1, 'Room number is required'),
   benches: z.coerce.number().min(1, 'Number of benches must be at least 1'),
-  studentsPerBench: z.coerce.number().min(1, 'Students per bench must be at least 1'),
+  studentsPerBench: z.coerce.number().min(1, 'Students per bench must be at least 1').max(2, 'Maximum students per bench is 2'),
 });
 export type Room = z.infer<typeof RoomSchema>;
 
