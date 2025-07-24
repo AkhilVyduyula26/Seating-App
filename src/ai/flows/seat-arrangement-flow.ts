@@ -179,7 +179,7 @@ const seatingArrangementFlow = ai.defineFlow(
     const layout = input.layoutConfig;
     
     // Flatten the layout into a list of available seats
-    const availableSeats: Omit<SeatingAssignment, 'name' | 'hallTicketNumber' | 'branch' | 'contactNumber'>[] = [];
+    const availableSeats: Omit<SeatingAssignment, 'name' | 'hallTicketNumber' | 'branch' | 'contactNumber' | 'benchNumber'>[] = [];
     layout.blocks.forEach(block => {
         block.floors.forEach(floor => {
             floor.rooms.forEach(room => {
@@ -189,7 +189,6 @@ const seatingArrangementFlow = ai.defineFlow(
                         block: block.name,
                         floor: String(floor.number),
                         classroom: room.number,
-                        benchNumber: i // This is actually the seat number
                     });
                 }
             });
@@ -220,74 +219,60 @@ const seatingArrangementFlow = ai.defineFlow(
     }));
 
     const seatingPlan: SeatingAssignment[] = [];
-    const assignedStudents = new Set<string>(); // Set of hallTicketNumbers
     let branchPoolIndex = 0;
     
-    for (const seat of availableSeats) {
-        if (assignedStudents.size >= allStudents.length) break;
+    // This loop assigns one student per seat, ensuring branch separation
+    for (let i = 0; i < availableSeats.length; i++) {
+        if (seatingPlan.length >= allStudents.length) break;
 
         let studentToAssign: Student | undefined = undefined;
-        let assignedInLoop = false;
-        
-        // Find a student for the current seat
-        for (let i = 0; i < studentPool.length; i++) {
-             const currentBranchPool = studentPool[branchPoolIndex];
-             
-             if (currentBranchPool.students.length > 0) {
-                // Find a student from this branch who hasn't been assigned yet
-                const student = currentBranchPool.students.find(s => !assignedStudents.has(s.hallTicketNumber));
 
-                 if (student) {
-                    // Check the adjacent seat if it exists
-                    const isLeftSeat = seat.benchNumber % 2 !== 0;
-                    const adjacentSeatNumber = isLeftSeat ? seat.benchNumber + 1 : seat.benchNumber - 1;
-                    
-                    const adjacentAssignment = seatingPlan.find(
-                        p => p.classroom === seat.classroom && p.benchNumber === adjacentSeatNumber
-                    );
-
-                    // If there's an adjacent student, they must be of a different branch
-                    if (!adjacentAssignment || adjacentAssignment.branch !== student.branch) {
-                        studentToAssign = student;
-                        break; // Found a suitable student
-                    }
-                 }
-             }
-             // Move to the next branch pool for the next attempt
-             branchPoolIndex = (branchPoolIndex + 1) % studentPool.length;
+        // Try to find a student from a different branch than the previous one
+        for (let j = 0; j < studentPool.length; j++) {
+            const currentBranchPool = studentPool[branchPoolIndex];
+            
+            if (currentBranchPool.students.length > 0) {
+                const lastStudent = seatingPlan[seatingPlan.length - 1];
+                
+                // If there is a student in the previous seat, ensure they are from a different branch
+                // This logic applies to benches with 2 students as well, checked at adjacent seat (i-1)
+                if (!lastStudent || lastStudent.branch !== currentBranchPool.branch) {
+                    studentToAssign = currentBranchPool.students.shift(); // Get the next student from this branch
+                    if(studentToAssign) break;
+                }
+            }
+            branchPoolIndex = (branchPoolIndex + 1) % studentPool.length;
         }
 
-        // If after trying all branches, no suitable student was found for a constrained seat,
-        // we might need to take the first available unassigned student.
-        // This is a fallback to prevent infinite loops, though the logic should avoid it.
+        // Fallback: If all branches have been checked and no student could be placed
+        // (e.g., only one branch is left), take the next available student.
         if (!studentToAssign) {
-            for(const pool of studentPool) {
-                const student = pool.students.find(s => !assignedStudents.has(s.hallTicketNumber));
-                if (student) {
-                    studentToAssign = student;
-                    break;
+            for (let j = 0; j < studentPool.length; j++) {
+                const pool = studentPool[branchPoolIndex];
+                if (pool.students.length > 0) {
+                    studentToAssign = pool.students.shift();
+                    if(studentToAssign) break;
                 }
+                branchPoolIndex = (branchPoolIndex + 1) % studentPool.length;
             }
         }
         
         if (studentToAssign) {
+            const seatNumber = i + 1;
+            const bench = Math.ceil(seatNumber / 2);
+            const side = seatNumber % 2 !== 0 ? 'L' : 'R';
+            
              seatingPlan.push({
                 ...studentToAssign,
-                ...seat,
+                ...availableSeats[i],
+                benchNumber: `${bench}${side}`,
             });
-            assignedStudents.add(studentToAssign.hallTicketNumber);
             
-            // Remove the assigned student from their pool to avoid re-assigning
-            const pool = studentsByBranch[studentToAssign.branch];
-            const indexToRemove = pool.findIndex(s => s.hallTicketNumber === studentToAssign!.hallTicketNumber);
-            if (indexToRemove > -1) {
-                pool.splice(indexToRemove, 1);
-            }
-
             // Move to the next branch pool for the next seat
             branchPoolIndex = (branchPoolIndex + 1) % studentPool.length;
         }
     }
+
 
     if (seatingPlan.length !== allStudents.length) {
          return { error: `Could not assign all students (${seatingPlan.length}/${allStudents.length}). There might be an issue with the layout that prevents satisfying the branch constraints. Try adding more single benches.` };

@@ -251,8 +251,7 @@ export default function AdminDashboard() {
 
 
         const tableData = students.map(s => [
-            Math.ceil(s.benchNumber / 2),
-            s.benchNumber % 2 !== 0 ? 'Left' : 'Right',
+            s.benchNumber,
             s.name,
             s.hallTicketNumber,
             s.branch,
@@ -260,7 +259,7 @@ export default function AdminDashboard() {
         ]);
 
         autoTable(doc, {
-            head: [['Bench', 'Corner', 'Name', 'Hall Ticket Number', 'Branch', 'Signature']],
+            head: [['Bench', 'Name', 'Hall Ticket Number', 'Branch', 'Signature']],
             body: tableData,
             startY: 35,
             theme: 'grid',
@@ -274,12 +273,11 @@ export default function AdminDashboard() {
                 fontSize: 10,
             },
             columnStyles: {
-                0: { cellWidth: 15 },
-                1: { cellWidth: 15 },
-                2: { cellWidth: 'auto' },
-                3: { cellWidth: 35 },
-                4: { cellWidth: 20 },
-                5: { cellWidth: 30 },
+                0: { cellWidth: 20 },
+                1: { cellWidth: 'auto' },
+                2: { cellWidth: 35 },
+                3: { cellWidth: 20 },
+                4: { cellWidth: 30 },
             }
         });
     });
@@ -295,7 +293,7 @@ export default function AdminDashboard() {
           }
           acc[room].push(student);
           // Sort students by bench number within each room
-          acc[room].sort((a,b) => a.benchNumber - b.benchNumber);
+          acc[room].sort((a,b) => a.benchNumber.localeCompare(b.benchNumber, undefined, { numeric: true }));
           return acc;
       }, {} as Record<string, SeatingAssignment[]>);
   };
@@ -394,7 +392,6 @@ export default function AdminDashboard() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Bench</TableHead>
-                                        <TableHead>Corner</TableHead>
                                         <TableHead>Name</TableHead>
                                         <TableHead>Roll Number</TableHead>
                                         <TableHead>Branch</TableHead>
@@ -404,8 +401,7 @@ export default function AdminDashboard() {
                                 <TableBody>
                                     {students.map(student => (
                                         <TableRow key={student.hallTicketNumber}>
-                                            <TableCell>{Math.ceil(student.benchNumber / 2)}</TableCell>
-                                            <TableCell>{student.benchNumber % 2 !== 0 ? 'Left' : 'Right'}</TableCell>
+                                            <TableCell>{student.benchNumber}</TableCell>
                                             <TableCell>{student.name}</TableCell>
                                             <TableCell>{student.hallTicketNumber}</TableCell>
                                             <TableCell>{student.branch}</TableCell>
