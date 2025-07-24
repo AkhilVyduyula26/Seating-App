@@ -18,7 +18,7 @@ export const SeatingAssignmentSchema = z.object({
     block: z.string(),
     floor: z.string(),
     classroom: z.string(),
-    benchNumber: z.number(),
+    benchNumber: z.string(),
 });
 export type SeatingAssignment = z.infer<typeof SeatingAssignmentSchema>;
 
