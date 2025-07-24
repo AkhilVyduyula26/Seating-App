@@ -36,6 +36,7 @@ import {
   X,
   Users,
   Download,
+  List,
 } from "lucide-react";
 import { SeatingTable } from "./seating-table";
 import { ExamConfig, SeatingAssignment, LayoutConfig, BlockSchema, LayoutFormSchema, GenerationFormSchema, RoomBranchSummary } from "@/lib/types";
@@ -47,6 +48,7 @@ import { useEffect } from "react";
 import { Separator } from "./ui/separator";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { Table as ShadTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 
 const fileToDataUri = (file: File) =>
@@ -196,7 +198,7 @@ export default function AdminDashboard() {
     });
   };
 
-  const handleDownloadPdf = () => {
+  const handleDownloadSummaryPdf = () => {
     if (!seatingData) return;
 
     const doc = new jsPDF();
@@ -215,7 +217,7 @@ export default function AdminDashboard() {
       startY: 20,
       theme: 'grid',
        headStyles: {
-        fillColor: [41, 128, 185], // A nice blue color
+        fillColor: [41, 128, 185],
         textColor: 255,
         fontStyle: 'bold',
       },
@@ -223,6 +225,79 @@ export default function AdminDashboard() {
 
     doc.save('room_occupancy_summary.pdf');
   };
+
+  const handleDownloadRoomwisePdf = () => {
+    if(!seatingData) return;
+
+    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+    const studentsByRoom = groupStudentsByRoom(seatingData.plan);
+
+    const collegeName = "SmartSeat College of Engineering"; // Replace with actual or dynamic name
+    const examTitle = "Mid Term Examinations"; // Replace with actual or dynamic name
+
+    Object.entries(studentsByRoom).forEach(([room, students], index) => {
+        if (index > 0) {
+            doc.addPage();
+        }
+        
+        // Add header
+        doc.setFontSize(16);
+        doc.text(collegeName, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+        doc.setFontSize(12);
+        doc.text(examTitle, doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
+        
+        doc.text(`Room No: ${room}`, 15, 30);
+        doc.text(`Date: ${format(seatingData.examConfig.startDate, 'dd/MM/yyyy')}`, doc.internal.pageSize.getWidth() - 15, 30, { align: 'right' });
+
+
+        const tableData = students.map(s => [
+            s.benchNumber,
+            s.name,
+            s.hallTicketNumber,
+            s.branch,
+            '' // for signature
+        ]);
+
+        autoTable(doc, {
+            head: [['Bench', 'Name', 'Hall Ticket Number', 'Branch', 'Signature']],
+            body: tableData,
+            startY: 35,
+            theme: 'grid',
+            headStyles: {
+                fillColor: [22, 160, 133],
+                textColor: 255,
+                fontStyle: 'bold',
+            },
+            styles: {
+                cellPadding: 2,
+                fontSize: 10,
+            },
+            columnStyles: {
+                0: { cellWidth: 15 },
+                1: { cellWidth: 'auto' },
+                2: { cellWidth: 35 },
+                3: { cellWidth: 20 },
+                4: { cellWidth: 30 },
+            }
+        });
+    });
+
+    doc.save('roomwise_student_list.pdf');
+  };
+
+  const groupStudentsByRoom = (plan: SeatingAssignment[]) => {
+      return plan.reduce((acc, student) => {
+          const room = student.classroom;
+          if(!acc[room]){
+              acc[room] = [];
+          }
+          acc[room].push(student);
+          // Sort students by bench number within each room
+          acc[room].sort((a,b) => a.benchNumber - b.benchNumber);
+          return acc;
+      }, {} as Record<string, SeatingAssignment[]>);
+  };
+
 
   if (isLoading) {
     return (
@@ -234,6 +309,7 @@ export default function AdminDashboard() {
   }
 
   if (seatingData) {
+    const studentsByRoom = groupStudentsByRoom(seatingData.plan);
     return (
       <div className="w-full max-w-7xl mx-auto space-y-6">
         <Card className="shadow-lg">
@@ -267,9 +343,9 @@ export default function AdminDashboard() {
                         Branch-wise student count in each room.
                     </CardDescription>
                 </div>
-                 <Button onClick={handleDownloadPdf} variant="outline" size="sm">
+                 <Button onClick={handleDownloadSummaryPdf} variant="outline" size="sm">
                     <Download className="mr-2 h-4 w-4" />
-                    Download as PDF
+                    Download Summary PDF
                 </Button>
             </CardHeader>
              <CardContent>
@@ -288,6 +364,55 @@ export default function AdminDashboard() {
                          </div>
                      ))}
                  </div>
+             </CardContent>
+        </Card>
+
+        <Card className="shadow-lg">
+             <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle className="flex items-center gap-2">
+                        <List />
+                       <span>Room-wise Student List</span>
+                    </CardTitle>
+                    <CardDescription>
+                        Detailed student seating arrangement for each room.
+                    </CardDescription>
+                </div>
+                 <Button onClick={handleDownloadRoomwisePdf} variant="outline" size="sm">
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Room-wise List PDF
+                </Button>
+            </CardHeader>
+             <CardContent className="space-y-6">
+                 {Object.entries(studentsByRoom).map(([room, students]) => (
+                     <div key={room}>
+                        <h3 className="font-bold text-lg mb-2 text-primary border-b pb-1">Room: {room}</h3>
+                        <div className="rounded-md border">
+                            <ShadTable>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Bench</TableHead>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead>Roll Number</TableHead>
+                                        <TableHead>Branch</TableHead>
+                                        <TableHead>Signature</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {students.map(student => (
+                                        <TableRow key={student.hallTicketNumber}>
+                                            <TableCell>{student.benchNumber}</TableCell>
+                                            <TableCell>{student.name}</TableCell>
+                                            <TableCell>{student.hallTicketNumber}</TableCell>
+                                            <TableCell>{student.branch}</TableCell>
+                                            <TableCell></TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </ShadTable>
+                        </div>
+                     </div>
+                 ))}
              </CardContent>
         </Card>
       </div>
