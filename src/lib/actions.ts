@@ -9,6 +9,7 @@ import {
 import { validateFaculty } from "@/ai/flows/validate-faculty-flow";
 import type { GenerateSeatingArrangementInput, ValidateFacultyInput, ExamConfig, LayoutConfig, AuthorizedFaculty, RoomBranchSummary } from '@/lib/types';
 import { format } from "date-fns";
+import { sendNotificationsAction } from "./fcm-actions";
 
 const seatingPlanPath = path.resolve(process.cwd(), ".data/seating-plan.json");
 const facultyAuthPath = path.resolve(process.cwd(), ".data/faculty-auth.json");
@@ -61,6 +62,9 @@ export async function createSeatingPlanAction(
     
     await fs.mkdir(path.dirname(seatingPlanPath), { recursive: true });
     await fs.writeFile(seatingPlanPath, JSON.stringify({ plan: result.seatingPlan, examConfig: result.examConfig, summary: result.roomBranchSummary }, null, 2));
+
+    // After successfully creating the plan, trigger notifications
+    await sendNotificationsAction();
 
     return { success: true, plan: result.seatingPlan, examConfig: result.examConfig, summary: result.roomBranchSummary };
   } catch (e: any) {
