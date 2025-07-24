@@ -145,11 +145,11 @@ export default function Home() {
         <div className="flex items-center gap-2 justify-center">
           <Bot className="h-8 w-8 text-primary" />
           <h1 className="text-4xl font-bold tracking-tight text-foreground font-headline">
-            Smart<span className="text-primary">Seat</span>
+            Nex<span className="text-primary">Allot</span>
           </h1>
         </div>
-        <p className="text-muted-foreground mt-2">
-          AI-powered Seating Arrangement for Exams
+        <p className="text-muted-foreground mt-2 italic">
+          check it out!!
         </p>
       </header>
        

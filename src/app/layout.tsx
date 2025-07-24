@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'SmartSeat',
+  title: 'NexAllot',
   description: 'AI-powered seating arrangement generator',
 };
 
