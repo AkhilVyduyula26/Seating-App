@@ -239,26 +239,17 @@ export default function AdminDashboard() {
 
     const logoUrl = 'https://www.mru.edu.in/wp-content/uploads/2023/10/logo-1.png'; // Publicly available logo
 
-    // This is a simplified way to get unique branches.
-    const allBranches = [...new Set(seatingData.plan.map(s => s.branch))];
-
     Object.entries(studentsByRoom).forEach(([room, students], index) => {
         if (index > 0) {
             doc.addPage();
         }
 
-        // Add logo
-        // Note: The logo might not load if there are CORS issues. Using a base64 string is more reliable.
-        // For this example, we assume the public URL works.
         try {
-            // Since jsPDF image support can be tricky with async, this is a best-effort.
-            // A more robust solution might involve fetching the image to a data URI first.
             doc.addImage(logoUrl, 'PNG', 15, 8, 30, 15);
         } catch (e) {
             console.error("Could not add logo to PDF:", e);
         }
         
-        // Add header
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
         doc.text("MALLA REDDY UNIVERSITY", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
@@ -270,7 +261,6 @@ export default function AdminDashboard() {
 
         let startY = 38;
 
-        // Absentees Section
         doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
         doc.text("Absentees Details", 15, startY);
@@ -278,7 +268,8 @@ export default function AdminDashboard() {
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
         
-        allBranches.forEach(branch => {
+        const roomBranches = [...new Set(students.map(s => s.branch))];
+        roomBranches.forEach(branch => {
             doc.text(`${branch} Absentees Roll Numbers:`, 15, startY);
             startY += 5;
             doc.line(15, startY, doc.internal.pageSize.getWidth() - 15, startY); // line
@@ -287,15 +278,15 @@ export default function AdminDashboard() {
             startY += 5;
         });
 
-        startY += 2; // Extra space before table
+        startY += 2;
 
 
         const tableData = students.map((s, idx) => [
-            idx + 1, // S.No
+            idx + 1,
             s.name,
-            s.hallTicketNumber, // Roll No
+            s.hallTicketNumber,
             s.branch,
-            s.benchNumber, // Seat No
+            s.benchNumber,
             '' // for signature
         ]);
 
@@ -314,12 +305,12 @@ export default function AdminDashboard() {
                 fontSize: 9,
             },
             columnStyles: {
-                0: { cellWidth: 10 }, // S.No
-                1: { cellWidth: 'auto' }, // Name
-                2: { cellWidth: 30 }, // Roll No
-                3: { cellWidth: 18 }, // Branch
-                4: { cellWidth: 18 }, // Seat No
-                5: { cellWidth: 30 }, // Signature
+                0: { cellWidth: 10 }, 
+                1: { cellWidth: 'auto' }, 
+                2: { cellWidth: 30 }, 
+                3: { cellWidth: 18 }, 
+                4: { cellWidth: 18 }, 
+                5: { cellWidth: 30 },
             }
         });
     });
@@ -333,38 +324,63 @@ export default function AdminDashboard() {
     const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
     const studentsByRoom = groupStudentsByRoom(seatingData.plan);
 
-    const collegeName = "MALLA REDDY UNIVERSITY";
-    const examTitle = "Mid Term Examinations - Seating Arrangement";
+    const logoUrl = 'https://www.mru.edu.in/wp-content/uploads/2023/10/logo-1.png';
 
     Object.entries(studentsByRoom).forEach(([room, students], index) => {
         if (index > 0) {
             doc.addPage();
         }
+
+        try {
+            doc.addImage(logoUrl, 'PNG', 15, 8, 30, 15);
+        } catch (e) {
+            console.error("Could not add logo to PDF:", e);
+        }
         
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
-        doc.text(collegeName, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+        doc.text("MALLA REDDY UNIVERSITY", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(12);
-        doc.text(examTitle, doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
         
+        doc.setFontSize(12);
         doc.text(`Room No: ${room}`, 15, 30);
         doc.text(`Date: ${format(seatingData.examConfig.startDate, 'dd/MM/yyyy')}`, doc.internal.pageSize.getWidth() - 15, 30, { align: 'right' });
 
+        let startY = 38;
 
-        const tableData = students.map(s => [
-            s.benchNumber,
+        const roomBranches = [...new Set(students.map(s => s.branch))];
+        if (roomBranches.length > 0) {
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'bold');
+            doc.text("Absentees Details", 15, startY);
+            startY += 5;
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            
+            roomBranches.forEach(branch => {
+                doc.text(`${branch} Absentees Roll Numbers:`, 15, startY);
+                startY += 5;
+                doc.line(15, startY, doc.internal.pageSize.getWidth() - 15, startY); 
+                startY += 5;
+                doc.line(15, startY, doc.internal.pageSize.getWidth() - 15, startY);
+                startY += 5;
+            });
+            startY += 2;
+        }
+
+
+        const tableData = students.map((s, idx) => [
+            idx + 1,
             s.name,
             s.hallTicketNumber,
             s.branch,
-            '', // for booklet number
-            '' // for signature
+            s.benchNumber, 
         ]);
 
         autoTable(doc, {
-            head: [['Bench', 'Name', 'Hall Ticket Number', 'Branch', 'Booklet Number', 'Signature']],
+            head: [['S.No', 'Name', 'Roll No', 'Branch', 'Seat No']],
             body: tableData,
-            startY: 35,
+            startY: startY,
             theme: 'grid',
             headStyles: {
                 fillColor: [22, 160, 133],
@@ -376,12 +392,11 @@ export default function AdminDashboard() {
                 fontSize: 9,
             },
             columnStyles: {
-                0: { cellWidth: 15 },
+                0: { cellWidth: 10 },
                 1: { cellWidth: 'auto' },
-                2: { cellWidth: 30 },
-                3: { cellWidth: 20 },
+                2: { cellWidth: 35 },
+                3: { cellWidth: 25 },
                 4: { cellWidth: 25 },
-                5: { cellWidth: 25 },
             }
         });
     });
@@ -396,15 +411,17 @@ export default function AdminDashboard() {
               acc[room] = [];
           }
           acc[room].push(student);
-          // Sort students by bench number within each room
+          
           acc[room].sort((a,b) => {
-            const numA = parseInt(a.benchNumber.slice(0, -1), 10);
-            const numB = parseInt(b.benchNumber.slice(0, -1), 10);
+            const numA = parseInt(a.benchNumber.replace(/[^0-9]/g, ''), 10);
+            const numB = parseInt(b.benchNumber.replace(/[^0-9]/g, ''), 10);
+            const sideA = a.benchNumber.replace(/[^LR]/g, '');
+            const sideB = b.benchNumber.replace(/[^LR]/g, '');
+
             if (numA !== numB) {
                 return numA - numB;
             }
-            // If bench numbers are the same, sort by side (L then R)
-            return a.benchNumber.slice(-1).localeCompare(b.benchNumber.slice(-1));
+            return sideA.localeCompare(sideB);
           });
           return acc;
       }, {} as Record<string, SeatingAssignment[]>);
@@ -863,4 +880,5 @@ const RoomsField = ({ blockIndex, floorIndex, control, register, getValues, setV
     );
 }
 
+    
     
