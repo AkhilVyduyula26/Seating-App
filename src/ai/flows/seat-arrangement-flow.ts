@@ -8,7 +8,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, SeatingAssignment, ExamConfigSchema, Student, RoomBranchSummary } from '@/lib/types';
+import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, SeatingAssignment, ExamConfigSchema, Student, RoomBranchSummary, Room } from '@/lib/types';
 import Papa from 'papaparse';
 
 
@@ -175,34 +175,15 @@ const seatingArrangementFlow = ai.defineFlow(
         return { error: "Could not extract any student data from the uploaded files. Please ensure files are correctly formatted and not empty." };
     }
     
-    // Step 2: Procedurally generate the seating plan based on the layout config
     const layout = input.layoutConfig;
     
-    // Flatten the layout into a list of available seats
-    const availableSeats: {seatInfo: Omit<SeatingAssignment, 'name' | 'hallTicketNumber' | 'branch' | 'contactNumber' | 'benchNumber'>, studentsPerBench: number}[] = [];
-    layout.blocks.forEach(block => {
-        block.floors.forEach(floor => {
-            floor.rooms.forEach(room => {
-                const totalSeats = room.benches * room.studentsPerBench;
-                for (let i = 1; i <= totalSeats; i++) {
-                    availableSeats.push({
-                        seatInfo: {
-                            block: block.name,
-                            floor: String(floor.number),
-                            classroom: room.number,
-                        },
-                        studentsPerBench: room.studentsPerBench
-                    });
-                }
-            });
-        });
-    });
+    let totalCapacity = 0;
+    layout.blocks.forEach(b => b.floors.forEach(f => f.rooms.forEach(r => totalCapacity += r.benches * r.studentsPerBench)));
 
-    if (allStudents.length > availableSeats.length) {
-        return { error: `Not enough seats for all students. Required: ${allStudents.length}, Available: ${availableSeats.length}. Please increase the layout capacity.` };
+    if (allStudents.length > totalCapacity) {
+        return { error: `Not enough seats for all students. Required: ${allStudents.length}, Available: ${totalCapacity}. Please increase the layout capacity.` };
     }
     
-    // Group students by branch
     const studentsByBranch: Record<string, Student[]> = {};
     allStudents.forEach(student => {
         if (!studentsByBranch[student.branch]) {
@@ -211,81 +192,92 @@ const seatingArrangementFlow = ai.defineFlow(
         studentsByBranch[student.branch].push(student);
     });
 
-    // Shuffle each branch list
     Object.values(studentsByBranch).forEach(shuffleArray);
     
-    // Create a flat list of students but maintain branch order for iteration
     const branchNames = shuffleArray(Object.keys(studentsByBranch));
     let studentPool = branchNames.flatMap(branch => studentsByBranch[branch]);
 
     const seatingPlan: SeatingAssignment[] = [];
-    let seatIndex = 0;
-    let benchCounter = 1;
+    let studentIndex = 0;
 
-    while (studentPool.length > 0 && seatIndex < availableSeats.length) {
-        const { seatInfo, studentsPerBench } = availableSeats[seatIndex];
-    
-        if (studentsPerBench === 1) {
-            const student = studentPool.shift();
-            if (student) {
-                seatingPlan.push({
-                    ...student,
-                    ...seatInfo,
-                    benchNumber: String(benchCounter),
-                });
-                seatIndex++;
-                benchCounter++;
-            }
-        } else if (studentsPerBench === 2) {
-            if (studentPool.length < 2) {
-                // Not enough students to fill a 2-person bench, assign remaining singly
+    for (const block of layout.blocks) {
+      for (const floor of block.floors) {
+        for (const room of floor.rooms) {
+          if (studentIndex >= allStudents.length) break;
+          
+          let benchCounter = 1;
+          const roomCapacity = Math.min(room.benches, 45) * room.studentsPerBench;
+          
+          for (let i = 0; i < roomCapacity; i++) {
+            if (studentIndex >= allStudents.length) break;
+
+            const seatInfo = {
+                block: block.name,
+                floor: String(floor.number),
+                classroom: room.number,
+            };
+
+            if (room.studentsPerBench === 1) {
                 const student = studentPool.shift();
-                if(student) {
-                    seatingPlan.push({ ...student, ...seatInfo, benchNumber: `${benchCounter}L` });
-                    seatIndex++;
+                if (student) {
+                    seatingPlan.push({ ...student, ...seatInfo, benchNumber: String(benchCounter++) });
+                    studentIndex++;
                 }
-                continue;
-            }
-
-            // Find two students from different branches
-            let student1 = studentPool[0];
-            let student2: Student | undefined = undefined;
-            let student2Index = -1;
-
-            for (let i = 1; i < studentPool.length; i++) {
-                if (studentPool[i].branch !== student1.branch) {
-                    student2 = studentPool[i];
-                    student2Index = i;
-                    break;
+            } else if (room.studentsPerBench === 2) {
+                if (studentPool.length < 2) {
+                    const student = studentPool.shift();
+                     if (student) {
+                        seatingPlan.push({ ...student, ...seatInfo, benchNumber: `${benchCounter}L` });
+                        studentIndex++;
+                    }
+                    continue; // Move to next room/block
                 }
+
+                let student1 = studentPool[0];
+                let student2: Student | undefined = undefined;
+                let student2Index = -1;
+
+                // Find a student from a different branch
+                for (let k = 1; k < studentPool.length; k++) {
+                    if (studentPool[k].branch !== student1.branch) {
+                        student2 = studentPool[k];
+                        student2Index = k;
+                        break;
+                    }
+                }
+                
+                // If all remaining students are from the same branch, take the next one
+                if (!student2) {
+                    student2 = studentPool[1];
+                    student2Index = 1;
+                }
+                
+                const s1 = studentPool.shift()!;
+                studentPool.splice(studentPool.indexOf(student2), 1);
+                const s2 = student2;
+                
+                seatingPlan.push({ ...s1, ...seatInfo, benchNumber: `${benchCounter}L` });
+                studentIndex++;
+                if (studentIndex >= allStudents.length) break;
+
+                seatingPlan.push({ ...s2, ...seatInfo, benchNumber: `${benchCounter}R` });
+                studentIndex++;
+
+                benchCounter++;
+                i++; // we've filled two spots
             }
-
-            // If no student from a different branch is found, take the next one
-            if (!student2) {
-                student2 = studentPool[1];
-                student2Index = 1;
-            }
-            
-            // Remove selected students from pool
-            studentPool = studentPool.filter((_, index) => index !== 0 && index !== student2Index);
-
-            // Assign to L/R corners
-            seatingPlan.push({ ...student1, ...seatInfo, benchNumber: `${benchCounter}L` });
-            seatingPlan.push({ ...student2, ...seatInfo, benchNumber: `${benchCounter}R` });
-
-            seatIndex += 2;
-            benchCounter++;
+          }
         }
+      }
     }
 
 
     if (seatingPlan.length !== allStudents.length) {
-         return { error: `Could not assign all students (${seatingPlan.length}/${allStudents.length}). There might be an issue with the layout that prevents satisfying the branch constraints. Try adding more single benches.` };
+         return { error: `Could not assign all students (${seatingPlan.length}/${allStudents.length}). There might be an issue with the layout that prevents satisfying the branch constraints. Try adjusting the layout.` };
     }
     
     seatingPlan.sort((a,b) => a.hallTicketNumber.localeCompare(b.hallTicketNumber));
 
-    // Step 3: Create the exam configuration from the layout input
     const [startHour, startMinute] = (layout.examTimings.split('to')[0].trim().match(/\d+/g) || ["09", "00"]);
     const [endHour, endMinute] = (layout.examTimings.split('to')[1].trim().match(/\d+/g) || ["12", "00"]);
 
@@ -297,7 +289,6 @@ const seatingArrangementFlow = ai.defineFlow(
         useSamePlan: true,
     };
 
-    // Step 4: Generate the room-branch summary
     const roomBranchSummary: RoomBranchSummary = {};
     seatingPlan.forEach(assignment => {
         const { classroom, branch } = assignment;
