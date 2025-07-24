@@ -189,7 +189,7 @@ const seatingArrangementFlow = ai.defineFlow(
                         block: block.name,
                         floor: String(floor.number),
                         classroom: room.number,
-                        benchNumber: i
+                        benchNumber: i // This is actually the seat number
                     });
                 }
             });
@@ -200,20 +200,97 @@ const seatingArrangementFlow = ai.defineFlow(
         return { error: `Not enough seats for all students. Required: ${allStudents.length}, Available: ${availableSeats.length}. Please increase the layout capacity.` };
     }
     
-    // Shuffle students for random assignment
-    const shuffledStudents = shuffleArray(allStudents);
+    // Group students by branch
+    const studentsByBranch: Record<string, Student[]> = {};
+    allStudents.forEach(student => {
+        if (!studentsByBranch[student.branch]) {
+            studentsByBranch[student.branch] = [];
+        }
+        studentsByBranch[student.branch].push(student);
+    });
+
+    // Shuffle each branch list
+    Object.values(studentsByBranch).forEach(shuffleArray);
     
+    // Create a flat list of students but maintain branch order for iteration
+    const branchNames = shuffleArray(Object.keys(studentsByBranch));
+    const studentPool = branchNames.map(branch => ({
+        branch,
+        students: studentsByBranch[branch]
+    }));
+
     const seatingPlan: SeatingAssignment[] = [];
+    const assignedStudents = new Set<string>(); // Set of hallTicketNumbers
+    let branchPoolIndex = 0;
     
-    for (let i = 0; i < shuffledStudents.length; i++) {
-        const student = shuffledStudents[i];
-        const seat = availableSeats[i]; // Direct assignment after shuffling
+    for (const seat of availableSeats) {
+        if (assignedStudents.size >= allStudents.length) break;
+
+        let studentToAssign: Student | undefined = undefined;
+        let assignedInLoop = false;
         
-        const assignment: SeatingAssignment = {
-            ...student,
-            ...seat
-        };
-        seatingPlan.push(assignment);
+        // Find a student for the current seat
+        for (let i = 0; i < studentPool.length; i++) {
+             const currentBranchPool = studentPool[branchPoolIndex];
+             
+             if (currentBranchPool.students.length > 0) {
+                // Find a student from this branch who hasn't been assigned yet
+                const student = currentBranchPool.students.find(s => !assignedStudents.has(s.hallTicketNumber));
+
+                 if (student) {
+                    // Check the adjacent seat if it exists
+                    const isLeftSeat = seat.benchNumber % 2 !== 0;
+                    const adjacentSeatNumber = isLeftSeat ? seat.benchNumber + 1 : seat.benchNumber - 1;
+                    
+                    const adjacentAssignment = seatingPlan.find(
+                        p => p.classroom === seat.classroom && p.benchNumber === adjacentSeatNumber
+                    );
+
+                    // If there's an adjacent student, they must be of a different branch
+                    if (!adjacentAssignment || adjacentAssignment.branch !== student.branch) {
+                        studentToAssign = student;
+                        break; // Found a suitable student
+                    }
+                 }
+             }
+             // Move to the next branch pool for the next attempt
+             branchPoolIndex = (branchPoolIndex + 1) % studentPool.length;
+        }
+
+        // If after trying all branches, no suitable student was found for a constrained seat,
+        // we might need to take the first available unassigned student.
+        // This is a fallback to prevent infinite loops, though the logic should avoid it.
+        if (!studentToAssign) {
+            for(const pool of studentPool) {
+                const student = pool.students.find(s => !assignedStudents.has(s.hallTicketNumber));
+                if (student) {
+                    studentToAssign = student;
+                    break;
+                }
+            }
+        }
+        
+        if (studentToAssign) {
+             seatingPlan.push({
+                ...studentToAssign,
+                ...seat,
+            });
+            assignedStudents.add(studentToAssign.hallTicketNumber);
+            
+            // Remove the assigned student from their pool to avoid re-assigning
+            const pool = studentsByBranch[studentToAssign.branch];
+            const indexToRemove = pool.findIndex(s => s.hallTicketNumber === studentToAssign!.hallTicketNumber);
+            if (indexToRemove > -1) {
+                pool.splice(indexToRemove, 1);
+            }
+
+            // Move to the next branch pool for the next seat
+            branchPoolIndex = (branchPoolIndex + 1) % studentPool.length;
+        }
+    }
+
+    if (seatingPlan.length !== allStudents.length) {
+         return { error: `Could not assign all students (${seatingPlan.length}/${allStudents.length}). There might be an issue with the layout that prevents satisfying the branch constraints. Try adding more single benches.` };
     }
     
     seatingPlan.sort((a,b) => a.hallTicketNumber.localeCompare(b.hallTicketNumber));
