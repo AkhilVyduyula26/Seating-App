@@ -18,7 +18,7 @@ export const SeatingAssignmentSchema = z.object({
     block: z.string(),
     floor: z.string(),
     classroom: z.string(),
-    benchNumber: z.string(),
+    benchNumber: z.number(),
 });
 export type SeatingAssignment = z.infer<typeof SeatingAssignmentSchema>;
 
@@ -109,3 +109,5 @@ export const AuthorizedFacultySchema = z.object({
   faculty_id: z.string(),
 });
 export type AuthorizedFaculty = z.infer<typeof AuthorizedFacultySchema>;
+
+    
