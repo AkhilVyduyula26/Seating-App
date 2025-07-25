@@ -109,3 +109,18 @@ export const AuthorizedFacultySchema = z.object({
   faculty_id: z.string(),
 });
 export type AuthorizedFaculty = z.infer<typeof AuthorizedFacultySchema>;
+
+
+export const PdfRequestSchema = z.object({
+    type: z.enum(['attendanceSheet', 'roomList', 'summary']),
+    seatingPlan: z.array(SeatingAssignmentSchema),
+    examConfig: ExamConfigSchema,
+    roomBranchSummary: RoomBranchSummarySchema,
+});
+export type PdfRequest = z.infer<typeof PdfRequestSchema>;
+
+export const PdfResponseSchema = z.object({
+    pdfDataUri: z.string().optional(),
+    error: z.string().optional(),
+});
+export type PdfResponse = z.infer<typeof PdfResponseSchema>;

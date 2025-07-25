@@ -3,3 +3,4 @@ config();
 
 import '@/ai/flows/seat-arrangement-flow';
 import '@/ai/flows/validate-faculty-flow';
+import '@/ai/flows/generate-pdf-flow';

@@ -6,13 +6,22 @@ import path from "path";
 import {
   generateSeatingArrangement,
 } from "@/ai/flows/seat-arrangement-flow";
+import {
+  generatePdf,
+} from "@/ai/flows/generate-pdf-flow";
 import { validateFaculty } from "@/ai/flows/validate-faculty-flow";
-import type { GenerateSeatingArrangementInput, ValidateFacultyInput, ExamConfig, LayoutConfig, AuthorizedFaculty, RoomBranchSummary } from '@/lib/types';
+import type { GenerateSeatingArrangementInput, ValidateFacultyInput, ExamConfig, LayoutConfig, AuthorizedFaculty, RoomBranchSummary, PdfRequest } from '@/lib/types';
 import { format } from "date-fns";
 import { sendNotificationsAction } from "./fcm-actions";
 
 const seatingPlanPath = path.resolve(process.cwd(), ".data/seating-plan.json");
 const facultyAuthPath = path.resolve(process.cwd(), ".data/faculty-auth.json");
+
+interface SeatingPlanData {
+    plan: any[];
+    examConfig: ExamConfig;
+    summary: RoomBranchSummary;
+}
 
 interface FacultyAuthData {
     authorized_faculty: AuthorizedFaculty[];
@@ -81,12 +90,7 @@ export async function createSeatingPlanAction(
   }
 }
 
-export async function getSeatingDataAction(): Promise<{
-  plan?: any[];
-  examConfig?: ExamConfig;
-  summary?: RoomBranchSummary;
-  error?: string;
-}> {
+export async function getSeatingDataAction(): Promise<SeatingPlanData & { error?: string }> {
   try {
     const data = await fs.readFile(seatingPlanPath, "utf-8");
     const parsedData = JSON.parse(data);
@@ -94,12 +98,41 @@ export async function getSeatingDataAction(): Promise<{
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       // Return null instead of an error string to indicate no plan exists
-      return { plan: undefined, examConfig: undefined };
+      return {} as SeatingPlanData;
     }
     console.error("Error fetching seating data:", error);
-    return { error: "Failed to load seating data." };
+    return { error: "Failed to load seating data." } as any;
   }
 }
+
+async function generatePdfAction(type: PdfRequest['type']) {
+    try {
+        const seatingData = await getSeatingDataAction();
+        if(seatingData.error || !seatingData.plan) {
+            return { success: false, error: seatingData.error || "Seating plan not found." };
+        }
+        
+        const result = await generatePdf({
+            type,
+            seatingPlan: seatingData.plan,
+            examConfig: seatingData.examConfig,
+            roomBranchSummary: seatingData.summary,
+        });
+
+        if (result.error) {
+             return { success: false, error: result.error };
+        }
+        return { success: true, pdfDataUri: result.pdfDataUri };
+    } catch (e: any) {
+        console.error(`Error generating ${type} PDF:`, e);
+        return { success: false, error: `An unexpected error occurred while generating the ${type} PDF.` };
+    }
+}
+
+export const generateAttendanceSheetPdfAction = () => generatePdfAction('attendanceSheet');
+export const generateRoomListPdfAction = () => generatePdfAction('roomList');
+export const generateSummaryPdfAction = () => generatePdfAction('summary');
+
 
 export async function deleteSeatingDataAction() {
     try {
