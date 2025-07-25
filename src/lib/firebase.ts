@@ -1,7 +1,5 @@
 
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getMessaging, getToken, Messaging } from 'firebase/messaging';
-import { getFirestore, doc, setDoc } from "firebase/firestore";
 
 
 const firebaseConfig = {
@@ -15,35 +13,7 @@ const firebaseConfig = {
 };
 
 let app: FirebaseApp;
-let messaging: Messaging | undefined;
 
 if (typeof window !== 'undefined') {
     app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-    messaging = getMessaging(app);
-}
-
-export const getMessagingToken = async () => {
-    let currentToken = '';
-    if (!messaging) return currentToken;
-    
-    try {
-        // IMPORTANT: You need to generate this VAPID key in your Firebase project settings
-        // Project settings > Cloud Messaging > Web configuration > Generate key pair
-        currentToken = await getToken(messaging, { vapidKey: 'YOUR_VAPID_KEY_HERE' });
-    } catch (error) {
-        console.error('An error occurred while retrieving token. ', error);
-    }
-    
-    return currentToken;
-};
-
-export const saveFCMToken = async (hallTicketNumber: string, token: string) => {
-    if (!app) return;
-    try {
-        const db = getFirestore(app);
-        const studentRef = doc(db, 'students', hallTicketNumber);
-        await setDoc(studentRef, { fcmToken: token }, { merge: true });
-    } catch(e) {
-        console.error("Error saving FCM token:", e);
-    }
 }

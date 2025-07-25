@@ -12,7 +12,7 @@ import { format } from "date-fns";
 import { ExamConfig, SeatingAssignment } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "./ui/separator";
-import FCMTokenManager from "./fcm-token-manager";
+
 
 interface DisplayExamConfig extends Omit<ExamConfig, 'startDate' | 'endDate'> {
     startDate: Date;
@@ -117,7 +117,7 @@ export default function StudentDashboard({ hallTicketNumber, onBackToHome }: { h
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-        <FCMTokenManager hallTicketNumber={hallTicketNumber} />
+        
         <Card className="w-full max-w-2xl shadow-lg">
             <CardHeader>
                 <CardTitle className="flex justify-between items-center">
