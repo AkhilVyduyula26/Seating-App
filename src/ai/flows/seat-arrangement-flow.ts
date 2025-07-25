@@ -8,7 +8,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, SeatingAssignment, ExamConfigSchema, Student, RoomBranchSummary, Room } from '@/lib/types';
+import { GenerateSeatingArrangementInputSchema, GenerateSeatingArrangementOutputSchema, GenerateSeatingArrangementInput, GenerateSeatingArrangementOutput, SeatingAssignment, ExamConfigSchema, Student, RoomBranchSummary, Room, StudentSchema } from '@/lib/types';
 import Papa from 'papaparse';
 
 
@@ -140,7 +140,7 @@ const seatingArrangementFlow = ai.defineFlow(
   {
     name: 'seatingArrangementFlow',
     inputSchema: GenerateSeatingArrangementInputSchema,
-    outputSchema: GenerateSeatingArrangementOutputSchema,
+    outputSchema: GenerateSeatingArrangementOutputSchema.extend({ allStudents: z.array(StudentSchema).optional() }),
   },
   async (input) => {
     
@@ -181,7 +181,8 @@ const seatingArrangementFlow = ai.defineFlow(
     layout.blocks.forEach(b => b.floors.forEach(f => f.rooms.forEach(r => totalCapacity += r.benches * r.studentsPerBench)));
 
     if (allStudents.length > totalCapacity) {
-        return { error: `Not enough seats for all students. Required: ${allStudents.length}, Available: ${totalCapacity}. Please increase the layout capacity.` };
+        // This is not an error, we just can't seat everyone. The absentees list will show who was left out.
+        // We will continue and seat as many as possible.
     }
     
     const studentsByBranch: Record<string, Student[]> = {};
@@ -203,13 +204,13 @@ const seatingArrangementFlow = ai.defineFlow(
     for (const block of layout.blocks) {
       for (const floor of block.floors) {
         for (const room of floor.rooms) {
-          if (studentIndex >= allStudents.length) break;
+          if (studentIndex >= totalCapacity) break; // Stop if we've hit total capacity
           
           let benchCounter = 1;
           const roomCapacity = Math.min(room.benches, 45) * room.studentsPerBench;
           
           for (let i = 0; i < roomCapacity; i++) {
-            if (studentIndex >= allStudents.length) break;
+            if (studentIndex >= totalCapacity || studentPool.length === 0) break;
 
             const seatInfo = {
                 block: block.name,
@@ -235,33 +236,30 @@ const seatingArrangementFlow = ai.defineFlow(
 
                 let student1 = studentPool[0];
                 let student2: Student | undefined = undefined;
-                let student2Index = -1;
 
                 // Find a student from a different branch
-                for (let k = 1; k < studentPool.length; k++) {
-                    if (studentPool[k].branch !== student1.branch) {
-                        student2 = studentPool[k];
-                        student2Index = k;
-                        break;
-                    }
-                }
-                
-                // If all remaining students are from the same branch, take the next one
-                if (!student2) {
+                const differentBranchIndex = studentPool.findIndex(s => s.branch !== student1.branch);
+
+                if (differentBranchIndex !== -1) {
+                    student2 = studentPool.splice(differentBranchIndex, 1)[0];
+                } else {
+                    // If all remaining students are from the same branch, take the next one
                     student2 = studentPool[1];
-                    student2Index = 1;
+                    studentPool.splice(1, 1);
                 }
                 
                 const s1 = studentPool.shift()!;
-                studentPool.splice(studentPool.indexOf(student2), 1);
                 const s2 = student2;
                 
                 seatingPlan.push({ ...s1, ...seatInfo, benchNumber: `${benchCounter}L` });
                 studentIndex++;
-                if (studentIndex >= allStudents.length) break;
+                if (studentIndex >= totalCapacity) break;
 
-                seatingPlan.push({ ...s2, ...seatInfo, benchNumber: `${benchCounter}R` });
-                studentIndex++;
+                if (s2) {
+                    seatingPlan.push({ ...s2, ...seatInfo, benchNumber: `${benchCounter}R` });
+                    studentIndex++;
+                }
+
 
                 benchCounter++;
                 i++; // we've filled two spots
@@ -271,11 +269,6 @@ const seatingArrangementFlow = ai.defineFlow(
       }
     }
 
-
-    if (seatingPlan.length !== allStudents.length) {
-         return { error: `Could not assign all students (${seatingPlan.length}/${allStudents.length}). There might be an issue with the layout that prevents satisfying the branch constraints. Try adjusting the layout.` };
-    }
-    
     seatingPlan.sort((a,b) => a.hallTicketNumber.localeCompare(b.hallTicketNumber));
 
 
@@ -298,13 +291,13 @@ const seatingArrangementFlow = ai.defineFlow(
         roomBranchSummary[classroom][branch]++;
     });
 
-    return { seatingPlan, examConfig, roomBranchSummary };
+    return { seatingPlan, examConfig, roomBranchSummary, allStudents };
   }
 );
 
 
 export async function generateSeatingArrangement(
   input: GenerateSeatingArrangementInput
-): Promise<GenerateSeatingArrangementOutput> {
+): Promise<GenerateSeatingArrangementOutput & { allStudents?: Student[] }> {
   return seatingArrangementFlow(input);
 }

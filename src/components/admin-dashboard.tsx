@@ -39,7 +39,7 @@ import {
   List,
 } from "lucide-react";
 import { SeatingTable } from "./seating-table";
-import { ExamConfig, SeatingAssignment, LayoutFormSchema, GenerationFormSchema, RoomBranchSummary } from "@/lib/types";
+import { ExamConfig, SeatingAssignment, LayoutFormSchema, GenerationFormSchema, RoomBranchSummary, Student } from "@/lib/types";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { format } from "date-fns";
@@ -69,6 +69,7 @@ interface DisplaySeatingData {
         endDate: Date;
     };
     summary: RoomBranchSummary;
+    allStudents: Student[];
 }
 
 const triggerDownload = (dataUri: string, filename: string) => {
@@ -79,6 +80,75 @@ const triggerDownload = (dataUri: string, filename: string) => {
     link.click();
     document.body.removeChild(link);
 }
+
+const addPdfHeader = (doc: jsPDF, seatingData: DisplaySeatingData, pageNumber: number, totalPages: number) => {
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    
+    // Add University Name
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text("MALLA REDDY UNIVERSITY", pageWidth / 2, 20, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+
+
+    // Add Absentees section only on the first page
+    if (pageNumber === 1) {
+        const assignedHallTickets = new Set(seatingData.plan.map(s => s.hallTicketNumber));
+        const absentees = seatingData.allStudents.filter(s => !assignedHallTickets.has(s.hallTicketNumber));
+        
+        const absenteesByBranch: Record<string, string[]> = {};
+        const allBranches = [...new Set(seatingData.allStudents.map(s => s.branch))];
+
+        allBranches.forEach(branch => {
+            absenteesByBranch[branch] = absentees
+                .filter(s => s.branch === branch)
+                .map(s => s.hallTicketNumber);
+        });
+
+        let yPos = 30; // Starting Y position for absentees section
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text("Absentees:", 15, yPos);
+        yPos += 5;
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+
+        Object.entries(absenteesByBranch).forEach(([branch, rollNumbers]) => {
+            if (yPos > pageHeight - 30) { // Check for page break
+                doc.addPage();
+                yPos = 20;
+            }
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${branch} Absentees Roll Numbers:`, 15, yPos);
+            yPos += 5;
+            doc.setLineWidth(0.2);
+            doc.line(15, yPos - 2, pageWidth - 15, yPos - 2);
+            
+            doc.setFont('helvetica', 'normal');
+            
+            if (rollNumbers.length > 0) {
+                 const rollNumberText = rollNumbers.join(", ");
+                 const splitText = doc.splitTextToSize(rollNumberText, pageWidth - 30);
+                 doc.text(splitText, 15, yPos);
+                 yPos += (splitText.length * 5) + 5;
+            } else {
+                 doc.text("None", 15, yPos);
+                 yPos += 10;
+            }
+        });
+        
+         // Add a separator before the main content
+         doc.setLineWidth(0.5);
+         doc.line(15, yPos, pageWidth - 15, yPos);
+         
+         // Set startY for autotable
+         return yPos + 10;
+    }
+    
+    return 30; // Default startY for other pages
+};
 
 
 export default function AdminDashboard() {
@@ -136,6 +206,7 @@ export default function AdminDashboard() {
                 endDate: new Date(data.examConfig.endDate),
             },
             summary: data.summary,
+            allStudents: data.allStudents || [],
         });
       }
     });
@@ -180,6 +251,7 @@ export default function AdminDashboard() {
                 endDate: new Date(result.examConfig.endDate),
             },
             summary: result.summary,
+            allStudents: result.allStudents || [],
         });
       } else {
         toast({
@@ -264,21 +336,24 @@ export default function AdminDashboard() {
         if (!seatingData) return;
         const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
         const studentsByRoom = groupStudentsByRoom(seatingData.plan);
+        const totalPages = Object.keys(studentsByRoom).length;
 
         Object.entries(studentsByRoom).forEach(([room, students], index) => {
             if (index > 0) doc.addPage();
             
+            const startY = addPdfHeader(doc, seatingData, index + 1, totalPages);
+            
             doc.setFontSize(14);
-            doc.text(`Seating Arrangement - Room: ${room}`, 15, 15);
+            doc.text(`Seating Arrangement - Room: ${room}`, 15, startY);
             doc.setFontSize(10);
-            doc.text(`Date: ${format(seatingData.examConfig.startDate, 'dd/MM/yyyy')}`, 15, 22);
+            doc.text(`Date: ${format(seatingData.examConfig.startDate, 'dd/MM/yyyy')}`, 15, startY + 7);
 
             const tableData = students.map(s => [s.benchNumber, s.name, s.hallTicketNumber, s.branch, '', '']);
             
             autoTable(doc, {
                 head: [['Bench', 'Name', 'Hallticket Number', 'Branch', 'Booklet Number', 'Signature']],
                 body: tableData,
-                startY: 30,
+                startY: startY + 15,
                 theme: 'grid',
                 headStyles: { fillColor: [22, 160, 133], textColor: 255, fontStyle: 'bold' },
                 styles: { cellPadding: 2, fontSize: 9 },

@@ -8,7 +8,7 @@ import {
 } from "@/ai/flows/seat-arrangement-flow";
 
 import { validateFaculty } from "@/ai/flows/validate-faculty-flow";
-import type { GenerateSeatingArrangementInput, ValidateFacultyInput, ExamConfig, LayoutConfig, AuthorizedFaculty, RoomBranchSummary } from '@/lib/types';
+import type { GenerateSeatingArrangementInput, ValidateFacultyInput, ExamConfig, LayoutConfig, AuthorizedFaculty, RoomBranchSummary, Student } from '@/lib/types';
 import { format } from "date-fns";
 
 
@@ -19,6 +19,7 @@ interface SeatingPlanData {
     plan: any[];
     examConfig: ExamConfig;
     summary: RoomBranchSummary;
+    allStudents: Student[];
 }
 
 interface FacultyAuthData {
@@ -61,16 +62,16 @@ export async function createSeatingPlanAction(
       },
     };
     
-    const result = await generateSeatingArrangement(input);
+    const {allStudents, ...result} = await generateSeatingArrangement(input);
 
     if (result.error) {
       return { error: result.error };
     }
     
     await fs.mkdir(path.dirname(seatingPlanPath), { recursive: true });
-    await fs.writeFile(seatingPlanPath, JSON.stringify({ plan: result.seatingPlan, examConfig: result.examConfig, summary: result.roomBranchSummary }, null, 2));
+    await fs.writeFile(seatingPlanPath, JSON.stringify({ plan: result.seatingPlan, examConfig: result.examConfig, summary: result.roomBranchSummary, allStudents }, null, 2));
 
-    return { success: true, plan: result.seatingPlan, examConfig: result.examConfig, summary: result.roomBranchSummary };
+    return { success: true, plan: result.seatingPlan, examConfig: result.examConfig, summary: result.roomBranchSummary, allStudents };
   } catch (e: any) {
     console.error("Error creating seating plan:", e);
      if (e.message?.includes("API key not valid")) {
@@ -85,18 +86,18 @@ export async function createSeatingPlanAction(
   }
 }
 
-export async function getSeatingDataAction(): Promise<SeatingPlanData & { error?: string }> {
+export async function getSeatingDataAction(): Promise<Partial<SeatingPlanData> & { error?: string }> {
   try {
     const data = await fs.readFile(seatingPlanPath, "utf-8");
     const parsedData = JSON.parse(data);
-    return { plan: parsedData.plan, examConfig: parsedData.examConfig, summary: parsedData.summary };
+    return { plan: parsedData.plan, examConfig: parsedData.examConfig, summary: parsedData.summary, allStudents: parsedData.allStudents };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       // Return null instead of an error string to indicate no plan exists
-      return {} as SeatingPlanData;
+      return {};
     }
     console.error("Error fetching seating data:", error);
-    return { error: "Failed to load seating data." } as any;
+    return { error: "Failed to load seating data." };
   }
 }
 

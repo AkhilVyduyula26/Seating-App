@@ -86,6 +86,7 @@ export const GenerateSeatingArrangementOutputSchema = z.object({
   seatingPlan: z.array(SeatingAssignmentSchema).optional().describe("The final generated seating arrangement for all students."),
   examConfig: ExamConfigSchema.optional().describe("The exam configuration."),
   roomBranchSummary: RoomBranchSummarySchema.optional().describe("A summary of branch-wise student count per room."),
+  allStudents: z.array(StudentSchema).optional().describe("The full list of all students parsed from the input files."),
   error: z.string().optional().describe("An error message if the process fails."),
 });
 export type GenerateSeatingArrangementOutput = z.infer<typeof GenerateSeatingArrangementOutputSchema>;
