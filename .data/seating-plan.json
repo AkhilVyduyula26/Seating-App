@@ -1,0 +1,887 @@
+{
+  "plan": [
+    {
+      "name": "A HARESH KUMAR",
+      "hallTicketNumber": "2211CS050001",
+      "branch": "IOT",
+      "contactNumber": "7032727516",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "18L"
+    },
+    {
+      "name": "A ROOPA",
+      "hallTicketNumber": "2211CS050002",
+      "branch": "IOT",
+      "contactNumber": "7989699756",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "38R"
+    },
+    {
+      "name": "AERPULA GOWREESHWARI",
+      "hallTicketNumber": "2211CS050003",
+      "branch": "IOT",
+      "contactNumber": "8639945928",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "7L"
+    },
+    {
+      "name": "AMARAPU SANDEEP KUMAR",
+      "hallTicketNumber": "2211CS050004",
+      "branch": "IOT",
+      "contactNumber": "9059047341",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "29R"
+    },
+    {
+      "name": "ANUMALA SHASHANK REDDY",
+      "hallTicketNumber": "2211CS050005",
+      "branch": "IOT",
+      "contactNumber": "9398130047",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "8R"
+    },
+    {
+      "name": "AVULURI KARTHIK REDDY",
+      "hallTicketNumber": "2211CS050006",
+      "branch": "IOT",
+      "contactNumber": "9030535638",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "22L"
+    },
+    {
+      "name": "B SRIMAN NARAYANA",
+      "hallTicketNumber": "2211CS050007",
+      "branch": "IOT",
+      "contactNumber": "9573944194",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "12R"
+    },
+    {
+      "name": "B YASHWITHA",
+      "hallTicketNumber": "2211CS050008",
+      "branch": "IOT",
+      "contactNumber": "9849796598",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "40R"
+    },
+    {
+      "name": "BAJOJI SRI VIDHYA",
+      "hallTicketNumber": "2211CS050009",
+      "branch": "IOT",
+      "contactNumber": "7416473029",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "9L"
+    },
+    {
+      "name": "BANDARI NAVYA SRI",
+      "hallTicketNumber": "2211CS050010",
+      "branch": "IOT",
+      "contactNumber": "9059116590",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "3R"
+    },
+    {
+      "name": "BANDARI SANGAMESHWAR REDDY",
+      "hallTicketNumber": "2211CS050011",
+      "branch": "IOT",
+      "contactNumber": "7569285878",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "33R"
+    },
+    {
+      "name": "BEERAM YASWITHA REDDY",
+      "hallTicketNumber": "2211CS050012",
+      "branch": "IOT",
+      "contactNumber": "9949152365",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "11L"
+    },
+    {
+      "name": "BOGA PURAPU VN HARSHA ADITHYA VARDHAN",
+      "hallTicketNumber": "2211CS050013",
+      "branch": "IOT",
+      "contactNumber": "9177139267",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "11R"
+    },
+    {
+      "name": "BOMMA NIKSHITH",
+      "hallTicketNumber": "2211CS050014",
+      "branch": "IOT",
+      "contactNumber": "7032612421",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "20R"
+    },
+    {
+      "name": "BORAPUREDDY BHARATH KUMAR",
+      "hallTicketNumber": "2211CS050015",
+      "branch": "IOT",
+      "contactNumber": "7569907556",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "27L"
+    },
+    {
+      "name": "CHELLARPU JAYASRI",
+      "hallTicketNumber": "2211CS050016",
+      "branch": "IOT",
+      "contactNumber": "7674990027",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "37L"
+    },
+    {
+      "name": "CHERUKU THARUN",
+      "hallTicketNumber": "2211CS050017",
+      "branch": "IOT",
+      "contactNumber": "6304986974",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "30L"
+    },
+    {
+      "name": "CHIMATA RAHUL NIRMALA",
+      "hallTicketNumber": "2211CS050018",
+      "branch": "IOT",
+      "contactNumber": "9515956992",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "38L"
+    },
+    {
+      "name": "D NAVEEN REDDY",
+      "hallTicketNumber": "2211CS050019",
+      "branch": "IOT",
+      "contactNumber": "8179709237",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "10L"
+    },
+    {
+      "name": "D REWANTH",
+      "hallTicketNumber": "2211CS050020",
+      "branch": "IOT",
+      "contactNumber": "7415905715",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "43L"
+    },
+    {
+      "name": "DASARI JEEVAN MOURYA",
+      "hallTicketNumber": "2211CS050021",
+      "branch": "IOT",
+      "contactNumber": "9014244979",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "7R"
+    },
+    {
+      "name": "DEEKSHITH MANKALA",
+      "hallTicketNumber": "2211CS050022",
+      "branch": "IOT",
+      "contactNumber": "9059315457",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "19L"
+    },
+    {
+      "name": "DEVANSH MISHRA",
+      "hallTicketNumber": "2211CS050023",
+      "branch": "IOT",
+      "contactNumber": "8886560223",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "21R"
+    },
+    {
+      "name": "BODDU POOJITHA",
+      "hallTicketNumber": "2211CS050024",
+      "branch": "IOT",
+      "contactNumber": "9381537479",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "4L"
+    },
+    {
+      "name": "ETTEDI MOHAN REDDY",
+      "hallTicketNumber": "2211CS050025",
+      "branch": "IOT",
+      "contactNumber": "7286955429",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "20L"
+    },
+    {
+      "name": "G SANJANA",
+      "hallTicketNumber": "2211CS050026",
+      "branch": "IOT",
+      "contactNumber": "9866120733",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "41L"
+    },
+    {
+      "name": "GADDAM NAVYUKTHA",
+      "hallTicketNumber": "2211CS050027",
+      "branch": "IOT",
+      "contactNumber": "8639189663",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "32L"
+    },
+    {
+      "name": "GANGA REDDY GOPIDWAD",
+      "hallTicketNumber": "2211CS050028",
+      "branch": "IOT",
+      "contactNumber": "7875640460",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "4R"
+    },
+    {
+      "name": "GEETHA",
+      "hallTicketNumber": "2211CS050029",
+      "branch": "IOT",
+      "contactNumber": "9963618980",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "26R"
+    },
+    {
+      "name": "GOPI REDDY BHARGAV SAI REDDY",
+      "hallTicketNumber": "2211CS050031",
+      "branch": "IOT",
+      "contactNumber": "9346243310",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "24R"
+    },
+    {
+      "name": "GUDDETI VINITH KUMAR REDDY",
+      "hallTicketNumber": "2211CS050032",
+      "branch": "IOT",
+      "contactNumber": "7989436880",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "15L"
+    },
+    {
+      "name": "GUJJULA HARSHITHA",
+      "hallTicketNumber": "2211CS050033",
+      "branch": "IOT",
+      "contactNumber": "9398304811",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "29L"
+    },
+    {
+      "name": "GUMMADIDALA RUCHITHA",
+      "hallTicketNumber": "2211CS050034",
+      "branch": "IOT",
+      "contactNumber": "9121729513",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "1L"
+    },
+    {
+      "name": "GUTHE VAMSHI",
+      "hallTicketNumber": "2211CS050035",
+      "branch": "IOT",
+      "contactNumber": "8317687250",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "23R"
+    },
+    {
+      "name": "HEKKY NIKHIL",
+      "hallTicketNumber": "2211CS050036",
+      "branch": "IOT",
+      "contactNumber": "8639292563",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "22R"
+    },
+    {
+      "name": "JIDUGU KARTHIKEYA",
+      "hallTicketNumber": "2211CS050038",
+      "branch": "IOT",
+      "contactNumber": "9966835588",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "33L"
+    },
+    {
+      "name": "K GANESH ",
+      "hallTicketNumber": "2211CS050039",
+      "branch": "IOT",
+      "contactNumber": "7569136232",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "9R"
+    },
+    {
+      "name": "K THANMAI REDDY",
+      "hallTicketNumber": "2211CS050040",
+      "branch": "IOT",
+      "contactNumber": "7989180472",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "2R"
+    },
+    {
+      "name": "K.SARANYA",
+      "hallTicketNumber": "2211CS050041",
+      "branch": "IOT",
+      "contactNumber": "7981753435",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "39R"
+    },
+    {
+      "name": "KADARI SAI RAM",
+      "hallTicketNumber": "2211CS050042",
+      "branch": "IOT",
+      "contactNumber": "9392817168",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "8L"
+    },
+    {
+      "name": "KALALI AKHIL",
+      "hallTicketNumber": "2211CS050043",
+      "branch": "IOT",
+      "contactNumber": "9392368313",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "34R"
+    },
+    {
+      "name": "KALLEPALLI SAITEJASWINI",
+      "hallTicketNumber": "2211CS050044",
+      "branch": "IOT",
+      "contactNumber": "8790523693",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "28L"
+    },
+    {
+      "name": "KANALA SAI KRISHNA SRI VARMA",
+      "hallTicketNumber": "2211CS050045",
+      "branch": "IOT",
+      "contactNumber": "7569088428",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "23L"
+    },
+    {
+      "name": "KANCHARLA SHIVANI",
+      "hallTicketNumber": "2211CS050046",
+      "branch": "IOT",
+      "contactNumber": "7386501722",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "12L"
+    },
+    {
+      "name": "KARANKI DHARAN",
+      "hallTicketNumber": "2211CS050047",
+      "branch": "IOT",
+      "contactNumber": "7032216583",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "5L"
+    },
+    {
+      "name": "KARNAM SHANMUKHA SAI",
+      "hallTicketNumber": "2211CS050048",
+      "branch": "IOT",
+      "contactNumber": "6305337081",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "36L"
+    },
+    {
+      "name": "KASARA SAMPATH KUMAR REDDY",
+      "hallTicketNumber": "2211CS050049",
+      "branch": "IOT",
+      "contactNumber": "9059979671",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "25L"
+    },
+    {
+      "name": "KASHIREDDY SNEHITH REDDY",
+      "hallTicketNumber": "2211CS050050",
+      "branch": "IOT",
+      "contactNumber": "9010978023",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "16L"
+    },
+    {
+      "name": "KODE INDRANI",
+      "hallTicketNumber": "2211CS050051",
+      "branch": "IOT",
+      "contactNumber": "6303544836",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "31R"
+    },
+    {
+      "name": "KOLAKANI RAJKUMAR",
+      "hallTicketNumber": "2211CS050052",
+      "branch": "IOT",
+      "contactNumber": "8555856316",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "32R"
+    },
+    {
+      "name": "KOLAKANI SAI VARDHAN",
+      "hallTicketNumber": "2211CS050053",
+      "branch": "IOT",
+      "contactNumber": "6305123250",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "24L"
+    },
+    {
+      "name": "KOMMANA DHARAN",
+      "hallTicketNumber": "2211CS050054",
+      "branch": "IOT",
+      "contactNumber": "7671058853",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "35L"
+    },
+    {
+      "name": "KONDA RAGHU RAM",
+      "hallTicketNumber": "2211CS050055",
+      "branch": "IOT",
+      "contactNumber": "9346326795",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "41R"
+    },
+    {
+      "name": "KUMBOJI PRANAY",
+      "hallTicketNumber": "2211CS050056",
+      "branch": "IOT",
+      "contactNumber": "7416172004",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "44L"
+    },
+    {
+      "name": "LAKAMRAJU LIKHITHA",
+      "hallTicketNumber": "2211CS050057",
+      "branch": "IOT",
+      "contactNumber": "6309815442",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "2L"
+    },
+    {
+      "name": "LINGA MURARI",
+      "hallTicketNumber": "2211CS050058",
+      "branch": "IOT",
+      "contactNumber": "8374886229",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "39L"
+    },
+    {
+      "name": "LINGAMPELLI SAI PAVAN",
+      "hallTicketNumber": "2211CS050059",
+      "branch": "IOT",
+      "contactNumber": "7995800747",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "3L"
+    },
+    {
+      "name": "LOAKMA NISHWANTH",
+      "hallTicketNumber": "2211CS050060",
+      "branch": "IOT",
+      "contactNumber": "8466090746",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "15R"
+    },
+    {
+      "name": "MAMIDI PRAVEEN KUMAR",
+      "hallTicketNumber": "2211CS050061",
+      "branch": "IOT",
+      "contactNumber": "7095209816",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "5R"
+    },
+    {
+      "name": "MANDHAM SAHITHI",
+      "hallTicketNumber": "2211CS050062",
+      "branch": "IOT",
+      "contactNumber": "7981199834",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "43R"
+    },
+    {
+      "name": "MANGALARAPU MANOJ KUMAR",
+      "hallTicketNumber": "2211CS050063",
+      "branch": "IOT",
+      "contactNumber": "9676125895",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "30R"
+    },
+    {
+      "name": "MANUPATI SRITHIK",
+      "hallTicketNumber": "2211CS050064",
+      "branch": "IOT",
+      "contactNumber": "7337415216",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "17L"
+    },
+    {
+      "name": "MD AYUB BASHA",
+      "hallTicketNumber": "2211CS050065",
+      "branch": "IOT",
+      "contactNumber": "6301487838",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "42L"
+    },
+    {
+      "name": "MD MAJID",
+      "hallTicketNumber": "2211CS050066",
+      "branch": "IOT",
+      "contactNumber": "9948817509",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "19R"
+    },
+    {
+      "name": "S ABHIGNA",
+      "hallTicketNumber": "2211CS050067",
+      "branch": "IOT",
+      "contactNumber": "6309816539",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "18R"
+    },
+    {
+      "name": "MEKALA VAMSHI KIRAN",
+      "hallTicketNumber": "2211CS050068",
+      "branch": "IOT",
+      "contactNumber": "9392849945",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "21L"
+    },
+    {
+      "name": "MIRIYALA VARUN TEJ",
+      "hallTicketNumber": "2211CS050069",
+      "branch": "IOT",
+      "contactNumber": "9177132041",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "31L"
+    },
+    {
+      "name": "MODALA VYSHNAVI",
+      "hallTicketNumber": "2211CS050070",
+      "branch": "IOT",
+      "contactNumber": "7386956315",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "25R"
+    },
+    {
+      "name": "MOHAMMAD LATHEEF AHMED",
+      "hallTicketNumber": "2211CS050071",
+      "branch": "IOT",
+      "contactNumber": "6303047522",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "10R"
+    },
+    {
+      "name": "MOHAMMED FARUK KHAN",
+      "hallTicketNumber": "2211CS050072",
+      "branch": "IOT",
+      "contactNumber": "7993102133",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "35R"
+    },
+    {
+      "name": "MUJJA YASHWANTH",
+      "hallTicketNumber": "2211CS050073",
+      "branch": "IOT",
+      "contactNumber": "7981629825",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "28R"
+    },
+    {
+      "name": "MUKKA SAKETH",
+      "hallTicketNumber": "2211CS050074",
+      "branch": "IOT",
+      "contactNumber": "8309516572",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "36R"
+    },
+    {
+      "name": "JAKKULA DHANUJAY",
+      "hallTicketNumber": "2211CS050075",
+      "branch": "IOT",
+      "contactNumber": "9121887217",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "40L"
+    },
+    {
+      "name": "NADAMKALA SREENIDHI",
+      "hallTicketNumber": "2211CS050076",
+      "branch": "IOT",
+      "contactNumber": "7207270806",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "13L"
+    },
+    {
+      "name": "NEELI BHARATH KALYAN",
+      "hallTicketNumber": "2211CS050077",
+      "branch": "IOT",
+      "contactNumber": "7396590385",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "42R"
+    },
+    {
+      "name": "P LAKSHMI",
+      "hallTicketNumber": "2211CS050078",
+      "branch": "IOT",
+      "contactNumber": "9347938065",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "37R"
+    },
+    {
+      "name": "P SAI SUDHEER REDDY",
+      "hallTicketNumber": "2211CS050079",
+      "branch": "IOT",
+      "contactNumber": "9908200363",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "1R"
+    },
+    {
+      "name": "P SIVA SHANKAR",
+      "hallTicketNumber": "2211CS050080",
+      "branch": "IOT",
+      "contactNumber": "7799339378",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "14R"
+    },
+    {
+      "name": "PAGADALA DIVYA",
+      "hallTicketNumber": "2211CS050081",
+      "branch": "IOT",
+      "contactNumber": "7569572330",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "6R"
+    },
+    {
+      "name": "PASALA SAGAR ANUDEEP",
+      "hallTicketNumber": "2211CS050082",
+      "branch": "IOT",
+      "contactNumber": "9014948359",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "27R"
+    },
+    {
+      "name": "PATHA VARUN KUMAR",
+      "hallTicketNumber": "2211CS050083",
+      "branch": "IOT",
+      "contactNumber": "9133012672",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "17R"
+    },
+    {
+      "name": "PATIL BHARATH",
+      "hallTicketNumber": "2211CS050084",
+      "branch": "IOT",
+      "contactNumber": "7569560979",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "34L"
+    },
+    {
+      "name": "PENIA PRASANNA",
+      "hallTicketNumber": "2211CS050085",
+      "branch": "IOT",
+      "contactNumber": "8074259125",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "16R"
+    },
+    {
+      "name": "PONNAM BAKKULA AKSHAYA",
+      "hallTicketNumber": "2211CS050086",
+      "branch": "IOT",
+      "contactNumber": "8143810284",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "13R"
+    },
+    {
+      "name": "PRASADI MALLIKARJUN",
+      "hallTicketNumber": "2211CS050087",
+      "branch": "IOT",
+      "contactNumber": "9550279632",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "14L"
+    },
+    {
+      "name": "K. Varsha",
+      "hallTicketNumber": "2211CS050088",
+      "branch": "IOT",
+      "contactNumber": "7036251676",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "26L"
+    },
+    {
+      "name": "PUTNALA RAJESHRI",
+      "hallTicketNumber": "2211CS050090",
+      "branch": "IOT",
+      "contactNumber": "7674820934",
+      "block": "Main Block",
+      "floor": "1",
+      "classroom": "101",
+      "benchNumber": "6L"
+    }
+  ],
+  "examConfig": {
+    "startDate": "2025-07-25",
+    "endDate": "2025-07-25",
+    "examTimings": [
+      "09:00 AM to 12:00 PM"
+    ],
+    "useSamePlan": true
+  },
+  "summary": {
+    "101": {
+      "IOT": 87
+    }
+  }
+}
