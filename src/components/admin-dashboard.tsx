@@ -81,7 +81,7 @@ const triggerDownload = (dataUri: string, filename: string) => {
     document.body.removeChild(link);
 }
 
-const addPdfHeader = (doc: jsPDF, seatingData: DisplaySeatingData, pageNumber: number, totalPages: number) => {
+const addPdfHeader = (doc: jsPDF, seatingData: DisplaySeatingData | null, pageNumber: number, totalPages: number) => {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     
@@ -93,7 +93,7 @@ const addPdfHeader = (doc: jsPDF, seatingData: DisplaySeatingData, pageNumber: n
 
 
     // Add Absentees section only on the first page
-    if (pageNumber === 1) {
+    if (pageNumber === 1 && seatingData && seatingData.allStudents) {
         const assignedHallTickets = new Set(seatingData.plan.map(s => s.hallTicketNumber));
         const absentees = seatingData.allStudents.filter(s => !assignedHallTickets.has(s.hallTicketNumber));
         
