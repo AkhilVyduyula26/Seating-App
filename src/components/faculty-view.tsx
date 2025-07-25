@@ -93,7 +93,7 @@ export default function FacultyView() {
             setFacultyData(result.data.authorized_faculty);
             setSecureKey(result.data.secure_key);
             // Pre-fill the update key form for convenience
-            updateKeyForm.setValue('newSecureKey', result.data.secure_key);
+            updateKeyForm.setValue('newSecureKey', result.data.secure_key || '');
         } else {
             toast({
                 variant: 'destructive',

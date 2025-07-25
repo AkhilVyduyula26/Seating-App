@@ -74,7 +74,7 @@ export default function Home() {
     return (
         <Card className="w-full max-w-md shadow-lg bg-card/80 backdrop-blur-sm">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <CardHeader>
+                <CardHeader className="items-center">
                     <CardTitle className="flex items-center justify-center gap-2">
                         <LogIn className="h-6 w-6"/> Login
                     </CardTitle>
