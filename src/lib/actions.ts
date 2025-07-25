@@ -8,10 +8,9 @@ import {
 } from "@/ai/flows/seat-arrangement-flow";
 
 import { validateFaculty } from "@/ai/flows/validate-faculty-flow";
-import type { GenerateSeatingArrangementInput, ValidateFacultyInput, ExamConfig, LayoutConfig, AuthorizedFaculty, RoomBranchSummary, PdfRequest } from '@/lib/types';
+import type { GenerateSeatingArrangementInput, ValidateFacultyInput, ExamConfig, LayoutConfig, AuthorizedFaculty, RoomBranchSummary } from '@/lib/types';
 import { format } from "date-fns";
 import { sendNotificationsAction } from "./fcm-actions";
-import { generatePdfFlow } from "@/ai/flows/generate-pdf-flow";
 
 const seatingPlanPath = path.resolve(process.cwd(), ".data/seating-plan.json");
 const facultyAuthPath = path.resolve(process.cwd(), ".data/faculty-auth.json");
@@ -103,42 +102,6 @@ export async function getSeatingDataAction(): Promise<SeatingPlanData & { error?
     return { error: "Failed to load seating data." } as any;
   }
 }
-
-async function generatePdfAction(type: PdfRequest['type']) {
-    try {
-        const seatingData = await getSeatingDataAction();
-        if(seatingData.error || !seatingData.plan) {
-            return { success: false, error: seatingData.error || "Seating plan not found." };
-        }
-        
-        const result = await generatePdfFlow({
-            type,
-            seatingPlan: seatingData.plan,
-            examConfig: seatingData.examConfig,
-            roomBranchSummary: seatingData.summary,
-        });
-
-        if (result.error) {
-            return { success: false, error: result.error };
-        }
-
-        return { success: true, pdfDataUri: result.pdfDataUri };
-    } catch (e: any) {
-        console.error(`Error generating ${type} PDF:`, e);
-        return { success: false, error: `An unexpected error occurred while generating the ${type} PDF.` };
-    }
-}
-
-export async function generateAttendanceSheetPdfAction() {
-    return generatePdfAction('attendanceSheet');
-}
-export async function generateRoomListPdfAction() {
-    return generatePdfAction('roomList');
-}
-export async function generateSummaryPdfAction() {
-    return generatePdfAction('summary');
-}
-
 
 export async function deleteSeatingDataAction() {
     try {
