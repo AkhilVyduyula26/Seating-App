@@ -72,7 +72,7 @@ export default function Home() {
     }
     
     return (
-        <Card className="w-full max-w-md shadow-lg">
+        <Card className="w-full max-w-md shadow-lg bg-card/80 backdrop-blur-sm">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <CardHeader>
                     <CardTitle className="flex items-center justify-center gap-2">
@@ -140,7 +140,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 lg:p-8">
+    <div className="min-h-screen bg-transparent flex flex-col items-center justify-center p-4 lg:p-8">
       <header className="absolute top-8 w-full text-center">
         <div className="flex items-center gap-2 justify-center">
           <Bot className="h-8 w-8 text-primary" />
