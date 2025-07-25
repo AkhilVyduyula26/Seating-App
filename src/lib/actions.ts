@@ -6,13 +6,12 @@ import path from "path";
 import {
   generateSeatingArrangement,
 } from "@/ai/flows/seat-arrangement-flow";
-import {
-  generatePdf,
-} from "@/ai/flows/generate-pdf-flow";
+
 import { validateFaculty } from "@/ai/flows/validate-faculty-flow";
 import type { GenerateSeatingArrangementInput, ValidateFacultyInput, ExamConfig, LayoutConfig, AuthorizedFaculty, RoomBranchSummary, PdfRequest } from '@/lib/types';
 import { format } from "date-fns";
 import { sendNotificationsAction } from "./fcm-actions";
+import { generatePdfDocument } from "./pdf-generator";
 
 const seatingPlanPath = path.resolve(process.cwd(), ".data/seating-plan.json");
 const facultyAuthPath = path.resolve(process.cwd(), ".data/faculty-auth.json");
@@ -112,26 +111,23 @@ async function generatePdfAction(type: PdfRequest['type']) {
             return { success: false, error: seatingData.error || "Seating plan not found." };
         }
         
-        const result = await generatePdf({
+        const pdfDataUri = await generatePdfDocument({
             type,
             seatingPlan: seatingData.plan,
             examConfig: seatingData.examConfig,
             roomBranchSummary: seatingData.summary,
         });
 
-        if (result.error) {
-             return { success: false, error: result.error };
-        }
-        return { success: true, pdfDataUri: result.pdfDataUri };
+        return { success: true, pdfDataUri };
     } catch (e: any) {
         console.error(`Error generating ${type} PDF:`, e);
         return { success: false, error: `An unexpected error occurred while generating the ${type} PDF.` };
     }
 }
 
-export const generateAttendanceSheetPdfAction = () => generatePdfAction('attendanceSheet');
-export const generateRoomListPdfAction = () => generatePdfAction('roomList');
-export const generateSummaryPdfAction = () => generatePdfAction('summary');
+export const generateAttendanceSheetPdfAction = async () => generatePdfAction('attendanceSheet');
+export const generateRoomListPdfAction = async () => generatePdfAction('roomList');
+export const generateSummaryPdfAction = async () => generatePdfAction('summary');
 
 
 export async function deleteSeatingDataAction() {
