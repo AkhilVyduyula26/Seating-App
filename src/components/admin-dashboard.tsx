@@ -273,16 +273,16 @@ export default function AdminDashboard() {
             doc.setFontSize(10);
             doc.text(`Date: ${format(seatingData.examConfig.startDate, 'dd/MM/yyyy')}`, 15, 22);
 
-            const tableData = students.map(s => [s.benchNumber, s.name, s.hallTicketNumber, s.branch, '']);
+            const tableData = students.map(s => [s.benchNumber, s.name, s.hallTicketNumber, s.branch, '', '']);
             
             autoTable(doc, {
-                head: [['Bench', 'Name', 'Hallticket Number', 'Branch', 'Signature']],
+                head: [['Bench', 'Name', 'Hallticket Number', 'Branch', 'Booklet Number', 'Signature']],
                 body: tableData,
                 startY: 30,
                 theme: 'grid',
                 headStyles: { fillColor: [22, 160, 133], textColor: 255, fontStyle: 'bold' },
                 styles: { cellPadding: 2, fontSize: 9 },
-                columnStyles: { 0: { cellWidth: 20 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 35 }, 3: { cellWidth: 25 }, 4: { cellWidth: 30 } },
+                columnStyles: { 0: { cellWidth: 15 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 30 }, 3: { cellWidth: 20 }, 4: { cellWidth: 30 }, 5: { cellWidth: 30 } },
             });
         });
 
@@ -385,6 +385,7 @@ export default function AdminDashboard() {
                                         <TableHead>Name</TableHead>
                                         <TableHead>Roll Number</TableHead>
                                         <TableHead>Branch</TableHead>
+                                        <TableHead>Booklet Number</TableHead>
                                         <TableHead>Signature</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -395,6 +396,7 @@ export default function AdminDashboard() {
                                             <TableCell>{student.name}</TableCell>
                                             <TableCell>{student.hallTicketNumber}</TableCell>
                                             <TableCell>{student.branch}</TableCell>
+                                            <TableCell></TableCell>
                                             <TableCell></TableCell>
                                         </TableRow>
                                     ))}
@@ -738,5 +740,3 @@ const RoomsField = ({ blockIndex, floorIndex, control, register, getValues, setV
         </div>
     );
 }
-
-    
