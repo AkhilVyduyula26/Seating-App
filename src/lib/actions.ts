@@ -42,6 +42,7 @@ async function readFacultyAuthData(): Promise<FacultyAuthData> {
 }
 
 async function writeFacultyAuthData(data: FacultyAuthData): Promise<void> {
+    await fs.mkdir(path.dirname(facultyAuthPath), { recursive: true });
     await fs.writeFile(facultyAuthPath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
@@ -68,10 +69,17 @@ export async function createSeatingPlanAction(
       return { error: result.error };
     }
     
-    await fs.mkdir(path.dirname(seatingPlanPath), { recursive: true });
-    await fs.writeFile(seatingPlanPath, JSON.stringify({ plan: result.seatingPlan, examConfig: result.examConfig, summary: result.roomBranchSummary, allStudents }, null, 2));
+    const dataToSave = {
+        plan: result.seatingPlan,
+        examConfig: result.examConfig,
+        summary: result.roomBranchSummary,
+        allStudents: allStudents // Ensure allStudents is saved
+    };
 
-    return { success: true, plan: result.seatingPlan, examConfig: result.examConfig, summary: result.roomBranchSummary, allStudents };
+    await fs.mkdir(path.dirname(seatingPlanPath), { recursive: true });
+    await fs.writeFile(seatingPlanPath, JSON.stringify(dataToSave, null, 2));
+
+    return { success: true, ...dataToSave };
   } catch (e: any) {
     console.error("Error creating seating plan:", e);
      if (e.message?.includes("API key not valid")) {
