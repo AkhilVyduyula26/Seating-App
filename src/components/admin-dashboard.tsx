@@ -90,7 +90,6 @@ export default function AdminDashboard() {
   const [isDeleting, startDeletion] = useTransition();
   const [isLoading, startLoading] = useTransition();
   const [isDownloadingAttendance, startDownloadingAttendance] = useTransition();
-  const [isDownloadingRoomList, startDownloadingRoomList] = useTransition();
   const [isDownloadingSummary, startDownloadingSummary] = useTransition();
   const [seatingData, setSeatingData] = useState<DisplaySeatingData | null>(null);
   const { toast } = useToast();
@@ -322,29 +321,6 @@ export default function AdminDashboard() {
         triggerDownload(doc.output('datauristring'), 'attendance_sheets.pdf');
     });
   };
-  
-  const handleDownloadRoomwiseListPdf = () => {
-    startDownloadingRoomList(() => {
-        if (!seatingData) return;
-        const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-        const studentsByRoom = groupStudentsByRoom(seatingData.plan);
-        Object.entries(studentsByRoom).forEach(([room, students], index) => {
-            if (index > 0) doc.addPage();
-            addPdfHeader(doc, room, seatingData.examConfig.startDate, seatingData.plan);
-            const tableData = students.map((s, idx) => [idx + 1, s.name, s.hallTicketNumber, s.branch, s.benchNumber]);
-            autoTable(doc, {
-                head: [['S.No', 'Name', 'Roll No', 'Branch', 'Seat No']],
-                body: tableData,
-                startY: (doc as any).lastAutoTable.finalY + 2,
-                theme: 'grid',
-                headStyles: { fillColor: [22, 160, 133], textColor: 255, fontStyle: 'bold' },
-                styles: { cellPadding: 2, fontSize: 9 },
-                columnStyles: { 0: { cellWidth: 10 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 35 }, 3: { cellWidth: 25 }, 4: { cellWidth: 25 } },
-            });
-        });
-        triggerDownload(doc.output('datauristring'), 'roomwise_seating_list.pdf');
-    });
-  };
 
 
   if (isLoading) {
@@ -376,10 +352,6 @@ export default function AdminDashboard() {
                  <Button onClick={handleDownloadAttendanceSheetPdf} variant="outline" disabled={isDownloadingAttendance}>
                     {isDownloadingAttendance ? <Loader2 className="mr-2 animate-spin" /> : <Download className="mr-2" />}
                     Download Attendance Sheets
-                </Button>
-                <Button onClick={handleDownloadRoomwiseListPdf} variant="outline" disabled={isDownloadingRoomList}>
-                    {isDownloadingRoomList ? <Loader2 className="mr-2 animate-spin" /> : <Download className="mr-2" />}
-                    Download Room Lists
                 </Button>
                  <Button onClick={handleDelete} variant="destructive" disabled={isDeleting} className="ml-auto">
                     {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2" />}
