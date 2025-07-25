@@ -82,6 +82,9 @@ export default function AdminDashboard() {
   const [isGenerating, startGeneration] = useTransition();
   const [isDeleting, startDeletion] = useTransition();
   const [isLoading, startLoading] = useTransition();
+  const [isDownloadingAttendance, startDownloadingAttendance] = useTransition();
+  const [isDownloadingRoomList, startDownloadingRoomList] = useTransition();
+  const [isDownloadingSummary, startDownloadingSummary] = useTransition();
   const [seatingData, setSeatingData] = useState<DisplaySeatingData | null>(null);
   const { toast } = useToast();
 
@@ -209,199 +212,204 @@ export default function AdminDashboard() {
 
   const handleDownloadSummaryPdf = () => {
     if (!seatingData) return;
+    startDownloadingSummary(() => {
+      const doc = new jsPDF();
+      doc.text("Room Occupancy Summary", 14, 16);
 
-    const doc = new jsPDF();
-    doc.text("Room Occupancy Summary", 14, 16);
-
-    const tableData: (string | number)[][] = [];
-    Object.entries(seatingData.summary).forEach(([room, branches]) => {
-      Object.entries(branches).forEach(([branch, count]) => {
-        tableData.push([room, branch, count]);
+      const tableData: (string | number)[][] = [];
+      Object.entries(seatingData.summary).forEach(([room, branches]) => {
+        Object.entries(branches).forEach(([branch, count]) => {
+          tableData.push([room, branch, count]);
+        });
       });
-    });
 
-    autoTable(doc, {
-      head: [['Room', 'Branch', 'Student Count']],
-      body: tableData,
-      startY: 20,
-      theme: 'grid',
-       headStyles: {
-        fillColor: [41, 128, 185],
-        textColor: 255,
-        fontStyle: 'bold',
-      },
-    });
+      autoTable(doc, {
+        head: [['Room', 'Branch', 'Student Count']],
+        body: tableData,
+        startY: 20,
+        theme: 'grid',
+         headStyles: {
+          fillColor: [41, 128, 185],
+          textColor: 255,
+          fontStyle: 'bold',
+        },
+      });
 
-    doc.save('room_occupancy_summary.pdf');
+      doc.save('room_occupancy_summary.pdf');
+    });
   };
 
   const handleDownloadAttendanceSheetPdf = () => {
     if(!seatingData) return;
 
-    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-    const studentsByRoom = groupStudentsByRoom(seatingData.plan);
+    startDownloadingAttendance(() => {
+      const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+      const studentsByRoom = groupStudentsByRoom(seatingData.plan);
 
-    Object.entries(studentsByRoom).forEach(([room, students], index) => {
-        if (index > 0) {
-            doc.addPage();
-        }
+      Object.entries(studentsByRoom).forEach(([room, students], index) => {
+          if (index > 0) {
+              doc.addPage();
+          }
 
-        try {
-            doc.addImage(logoBase64, 'PNG', 15, 8, 30, 15);
-        } catch (e) {
-            console.error("Could not add logo to PDF:", e);
-        }
-        
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.text("MALLA REDDY UNIVERSITY", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
-        doc.setFont('helvetica', 'normal');
+          try {
+              doc.addImage(logoBase64, 'PNG', 15, 8, 30, 15);
+          } catch (e) {
+              console.error("Could not add logo to PDF:", e);
+          }
+          
+          doc.setFontSize(16);
+          doc.setFont('helvetica', 'bold');
+          doc.text("MALLA REDDY UNIVERSITY", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+          doc.setFont('helvetica', 'normal');
 
-        doc.setFontSize(12);
-        doc.text(`Room No: ${room}`, 15, 30);
-        doc.text(`Date: ${format(seatingData.examConfig.startDate, 'dd/MM/yyyy')}`, doc.internal.pageSize.getWidth() - 15, 30, { align: 'right' });
+          doc.setFontSize(12);
+          doc.text(`Room No: ${room}`, 15, 30);
+          doc.text(`Date: ${format(seatingData.examConfig.startDate, 'dd/MM/yyyy')}`, doc.internal.pageSize.getWidth() - 15, 30, { align: 'right' });
 
-        let startY = 38;
+          let startY = 38;
 
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        doc.text("Absentees Details", 15, startY);
-        startY += 5;
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        
-        const roomBranches = [...new Set(students.map(s => s.branch))];
-        roomBranches.forEach(branch => {
-            doc.text(`${branch} Absentees Roll Numbers:`, 15, startY);
-            startY += 5;
-            doc.line(15, startY, doc.internal.pageSize.getWidth() - 15, startY); // line
-            startY += 5;
-             doc.line(15, startY, doc.internal.pageSize.getWidth() - 15, startY); // line
-            startY += 5;
-        });
+          doc.setFontSize(11);
+          doc.setFont('helvetica', 'bold');
+          doc.text("Absentees Details", 15, startY);
+          startY += 5;
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'normal');
+          
+          const roomBranches = [...new Set(students.map(s => s.branch))];
+          roomBranches.forEach(branch => {
+              doc.text(`${branch} Absentees Roll Numbers:`, 15, startY);
+              startY += 5;
+              doc.line(15, startY, doc.internal.pageSize.getWidth() - 15, startY); // line
+              startY += 5;
+               doc.line(15, startY, doc.internal.pageSize.getWidth() - 15, startY); // line
+              startY += 5;
+          });
 
-        startY += 2;
+          startY += 2;
 
 
-        const tableData = students.map((s, idx) => [
-            idx + 1,
-            s.name,
-            s.hallTicketNumber,
-            s.branch,
-            s.benchNumber,
-            '' // for signature
-        ]);
+          const tableData = students.map((s, idx) => [
+              idx + 1,
+              s.name,
+              s.hallTicketNumber,
+              s.branch,
+              s.benchNumber,
+              '' // for booklet number
+          ]);
 
-        autoTable(doc, {
-            head: [['S.No', 'Name', 'Roll No', 'Branch', 'Seat No', 'Signature']],
-            body: tableData,
-            startY: startY,
-            theme: 'grid',
-            headStyles: {
-                fillColor: [22, 160, 133],
-                textColor: 255,
-                fontStyle: 'bold',
-            },
-            styles: {
-                cellPadding: 2,
-                fontSize: 9,
-            },
-            columnStyles: {
-                0: { cellWidth: 10 }, 
-                1: { cellWidth: 'auto' }, 
-                2: { cellWidth: 30 }, 
-                3: { cellWidth: 18 }, 
-                4: { cellWidth: 18 }, 
-                5: { cellWidth: 30 },
-            }
-        });
+          autoTable(doc, {
+              head: [['S.No', 'Name', 'Roll No', 'Branch', 'Seat No', 'Booklet Number']],
+              body: tableData,
+              startY: startY,
+              theme: 'grid',
+              headStyles: {
+                  fillColor: [22, 160, 133],
+                  textColor: 255,
+                  fontStyle: 'bold',
+              },
+              styles: {
+                  cellPadding: 2,
+                  fontSize: 9,
+              },
+              columnStyles: {
+                  0: { cellWidth: 10 }, 
+                  1: { cellWidth: 'auto' }, 
+                  2: { cellWidth: 30 }, 
+                  3: { cellWidth: 18 }, 
+                  4: { cellWidth: 18 }, 
+                  5: { cellWidth: 30 },
+              }
+          });
+      });
+
+      doc.save('attendance_sheets.pdf');
     });
-
-    doc.save('attendance_sheets.pdf');
   };
   
     const handleDownloadRoomwiseListPdf = () => {
     if(!seatingData) return;
 
-    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-    const studentsByRoom = groupStudentsByRoom(seatingData.plan);
+    startDownloadingRoomList(() => {
+      const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+      const studentsByRoom = groupStudentsByRoom(seatingData.plan);
 
-    Object.entries(studentsByRoom).forEach(([room, students], index) => {
-        if (index > 0) {
-            doc.addPage();
-        }
+      Object.entries(studentsByRoom).forEach(([room, students], index) => {
+          if (index > 0) {
+              doc.addPage();
+          }
 
-        try {
-            doc.addImage(logoBase64, 'PNG', 15, 8, 30, 15);
-        } catch (e) {
-            console.error("Could not add logo to PDF:", e);
-        }
-        
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.text("MALLA REDDY UNIVERSITY", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
-        doc.setFont('helvetica', 'normal');
-        
-        doc.setFontSize(12);
-        doc.text(`Room No: ${room}`, 15, 30);
-        doc.text(`Date: ${format(seatingData.examConfig.startDate, 'dd/MM/yyyy')}`, doc.internal.pageSize.getWidth() - 15, 30, { align: 'right' });
+          try {
+              doc.addImage(logoBase64, 'PNG', 15, 8, 30, 15);
+          } catch (e) {
+              console.error("Could not add logo to PDF:", e);
+          }
+          
+          doc.setFontSize(16);
+          doc.setFont('helvetica', 'bold');
+          doc.text("MALLA REDDY UNIVERSITY", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+          doc.setFont('helvetica', 'normal');
+          
+          doc.setFontSize(12);
+          doc.text(`Room No: ${room}`, 15, 30);
+          doc.text(`Date: ${format(seatingData.examConfig.startDate, 'dd/MM/yyyy')}`, doc.internal.pageSize.getWidth() - 15, 30, { align: 'right' });
 
-        let startY = 38;
+          let startY = 38;
 
-        const roomBranches = [...new Set(students.map(s => s.branch))];
-        if (roomBranches.length > 0) {
-            doc.setFontSize(11);
-            doc.setFont('helvetica', 'bold');
-            doc.text("Absentees Details", 15, startY);
-            startY += 5;
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(10);
-            
-            roomBranches.forEach(branch => {
-                doc.text(`${branch} Absentees Roll Numbers:`, 15, startY);
-                startY += 5;
-                doc.line(15, startY, doc.internal.pageSize.getWidth() - 15, startY); 
-                startY += 5;
-                doc.line(15, startY, doc.internal.pageSize.getWidth() - 15, startY);
-                startY += 5;
-            });
-            startY += 2;
-        }
+          const roomBranches = [...new Set(students.map(s => s.branch))];
+          if (roomBranches.length > 0) {
+              doc.setFontSize(11);
+              doc.setFont('helvetica', 'bold');
+              doc.text("Absentees Details", 15, startY);
+              startY += 5;
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(10);
+              
+              roomBranches.forEach(branch => {
+                  doc.text(`${branch} Absentees Roll Numbers:`, 15, startY);
+                  startY += 5;
+                  doc.line(15, startY, doc.internal.pageSize.getWidth() - 15, startY); 
+                  startY += 5;
+                  doc.line(15, startY, doc.internal.pageSize.getWidth() - 15, startY);
+                  startY += 5;
+              });
+              startY += 2;
+          }
 
 
-        const tableData = students.map((s, idx) => [
-            idx + 1,
-            s.name,
-            s.hallTicketNumber,
-            s.branch,
-            s.benchNumber, 
-        ]);
+          const tableData = students.map((s, idx) => [
+              idx + 1,
+              s.name,
+              s.hallTicketNumber,
+              s.branch,
+              s.benchNumber, 
+          ]);
 
-        autoTable(doc, {
-            head: [['S.No', 'Name', 'Roll No', 'Branch', 'Seat No']],
-            body: tableData,
-            startY: startY,
-            theme: 'grid',
-            headStyles: {
-                fillColor: [22, 160, 133],
-                textColor: 255,
-                fontStyle: 'bold',
-            },
-            styles: {
-                cellPadding: 2,
-                fontSize: 9,
-            },
-            columnStyles: {
-                0: { cellWidth: 10 },
-                1: { cellWidth: 'auto' },
-                2: { cellWidth: 35 },
-                3: { cellWidth: 25 },
-                4: { cellWidth: 25 },
-            }
-        });
+          autoTable(doc, {
+              head: [['S.No', 'Name', 'Roll No', 'Branch', 'Seat No']],
+              body: tableData,
+              startY: startY,
+              theme: 'grid',
+              headStyles: {
+                  fillColor: [22, 160, 133],
+                  textColor: 255,
+                  fontStyle: 'bold',
+              },
+              styles: {
+                  cellPadding: 2,
+                  fontSize: 9,
+              },
+              columnStyles: {
+                  0: { cellWidth: 10 },
+                  1: { cellWidth: 'auto' },
+                  2: { cellWidth: 35 },
+                  3: { cellWidth: 25 },
+                  4: { cellWidth: 25 },
+              }
+          });
+      });
+
+      doc.save('roomwise_seating_list.pdf');
     });
-
-    doc.save('roomwise_seating_list.pdf');
   };
 
   const groupStudentsByRoom = (plan: SeatingAssignment[]) => {
@@ -454,12 +462,12 @@ export default function AdminDashboard() {
                 <SeatingTable data={seatingData.plan} />
             </CardContent>
             <CardFooter className="flex flex-wrap gap-2">
-                 <Button onClick={handleDownloadAttendanceSheetPdf} variant="outline">
-                    <Download className="mr-2" />
+                 <Button onClick={handleDownloadAttendanceSheetPdf} variant="outline" disabled={isDownloadingAttendance}>
+                    {isDownloadingAttendance ? <Loader2 className="mr-2 animate-spin" /> : <Download className="mr-2" />}
                     Download Attendance Sheets
                 </Button>
-                <Button onClick={handleDownloadRoomwiseListPdf} variant="outline">
-                    <Download className="mr-2" />
+                <Button onClick={handleDownloadRoomwiseListPdf} variant="outline" disabled={isDownloadingRoomList}>
+                    {isDownloadingRoomList ? <Loader2 className="mr-2 animate-spin" /> : <Download className="mr-2" />}
                     Download Room Lists
                 </Button>
                  <Button onClick={handleDelete} variant="destructive" disabled={isDeleting} className="ml-auto">
@@ -480,8 +488,8 @@ export default function AdminDashboard() {
                         Branch-wise student count in each room.
                     </CardDescription>
                 </div>
-                 <Button onClick={handleDownloadSummaryPdf} variant="outline" size="sm">
-                    <Download className="mr-2 h-4 w-4" />
+                 <Button onClick={handleDownloadSummaryPdf} variant="outline" size="sm" disabled={isDownloadingSummary}>
+                    {isDownloadingSummary ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                     Download Summary PDF
                 </Button>
             </CardHeader>
@@ -879,7 +887,3 @@ const RoomsField = ({ blockIndex, floorIndex, control, register, getValues, setV
         </div>
     );
 }
-
-    
-    
-    
